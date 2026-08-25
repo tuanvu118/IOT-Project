@@ -41,8 +41,7 @@ def get_current_user(
         )
 
     db = get_firestore_client()
-    user_ref = db.collection("users").document(uid)
-    user_doc = user_ref.get()
+    user_doc = db.collection("users").document(uid).get()
 
     if not user_doc.exists:
         raise HTTPException(
@@ -50,4 +49,17 @@ def get_current_user(
             detail="Người dùng không tồn tại trong hệ thống. Vui lòng đăng ký trước.",
         )
 
-    return UserEntity(id=uid, **user_doc.to_dict())
+    data = user_doc.to_dict()
+    return UserEntity(
+        id=uid,
+        name=data.get("name", ""),
+        phone_number=data.get("phoneNumber", ""),
+        avatar_url=data.get("avatarUrl"),
+        address=data.get("address"),
+        date_of_birth=data.get("dateOfBirth"),
+        citizen_number=data.get("citizenNumber"),
+        sos_numbers=data.get("sosNumbers", []),
+        fcm_tokens=data.get("fcmTokens", []),
+        last_sign_in=data.get("lastSignIn"),
+    )
+

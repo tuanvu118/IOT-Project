@@ -8,11 +8,7 @@ from app.core.exceptions import http_exception_handler, generic_exception_handle
 from app.controller.auth_controller import router as auth_router
 from app.controller.user_controller import router as user_router
 from app.controller.device_controller import router as device_router
-from app.controller.vehicle_controller import router as vehicle_router
-from app.controller.device_location_controller import router as device_location_router
-from app.controller.device_event_controller import router as device_event_router
 from app.controller.notification_controller import router as notification_router
-from app.controller.emergency_contact_controller import router as emergency_contact_router
 
 # ─── Firebase Init ────────────────────────────────────────────────────────────
 initialize_firebase()
@@ -50,11 +46,7 @@ API_PREFIX = "/api/v1"
 app.include_router(auth_router, prefix=API_PREFIX)
 app.include_router(user_router, prefix=API_PREFIX)
 app.include_router(device_router, prefix=API_PREFIX)
-app.include_router(vehicle_router, prefix=API_PREFIX)
-app.include_router(device_location_router, prefix=API_PREFIX)
-app.include_router(device_event_router, prefix=API_PREFIX)
 app.include_router(notification_router, prefix=API_PREFIX)
-app.include_router(emergency_contact_router, prefix=API_PREFIX)
 
 
 # ─── Health Check ─────────────────────────────────────────────────────────────

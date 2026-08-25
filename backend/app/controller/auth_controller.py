@@ -11,6 +11,21 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 http_bearer = HTTPBearer()
 
 
+def _to_response(user) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        name=user.name,
+        phone_number=user.phone_number,
+        avatar_url=user.avatar_url,
+        address=user.address,
+        date_of_birth=user.date_of_birth,
+        citizen_number=user.citizen_number,
+        sos_numbers=user.sos_numbers,
+        fcm_tokens=user.fcm_tokens,
+        last_sign_in=user.last_sign_in,
+    )
+
+
 @router.post(
     "/register",
     response_model=UserResponse,
@@ -54,19 +69,7 @@ def register(
 
     service = UserService()
     user = service.register(uid, payload)
-
-    return UserResponse(
-        id=user.id,
-        phone_number=user.phone_number,
-        name=user.name,
-        avatar_url=user.avatar_url,
-        address=user.address,
-        date_of_birth=user.date_of_birth,
-        citizen_number=user.citizen_number,
-        status=user.status,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
-    )
+    return _to_response(user)
 
 
 @router.get(
@@ -90,16 +93,5 @@ def get_me(
     uid = decoded_token.get("uid")
     service = UserService()
     user = service.get_by_id(uid)
+    return _to_response(user)
 
-    return UserResponse(
-        id=user.id,
-        phone_number=user.phone_number,
-        name=user.name,
-        avatar_url=user.avatar_url,
-        address=user.address,
-        date_of_birth=user.date_of_birth,
-        citizen_number=user.citizen_number,
-        status=user.status,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
-    )

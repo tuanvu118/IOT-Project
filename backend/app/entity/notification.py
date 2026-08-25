@@ -5,21 +5,22 @@ from pydantic import BaseModel
 
 class NotificationEntity(BaseModel):
     """
-    Đại diện cho document trong Firestore collection: notifications/{id}
-    Thông báo hiển thị trên ứng dụng của User.
-    Nên index theo (user_id, created_at).
-    """
-    id: Optional[str] = None  # Firestore auto-generated document ID
+    Đại diện cho document trong Firestore collection: user-notifications/{id}
 
-    user_id: str               # FK → users/{uid}
-    device_id: str             # FK → devices/{id}
-    event_id: Optional[str] = None  # FK → device_events/{id} nếu có
-    type: str                  # Loại thông báo: ACCIDENT | THEFT | SOS | INFO
+    NoSQL schema fields (Firestore camelCase → Python snake_case):
+      userId, deviceId, isRead, createdAt, type (enum), status (number)
+    """
+    id: Optional[str] = None   # Firestore auto-generated document ID
+
     title: str                 # Tiêu đề thông báo
     content: str               # Nội dung thông báo
+    type: str                  # Loại: ACCIDENT | THEFT | SOS | INFO (enum)
+    status: int = 0            # Trạng thái (number)
+    user_id: str               # FK → users/{uid}
     is_read: bool = False      # User đã đọc hay chưa
-    read_at: Optional[datetime] = None  # Thời điểm User đọc thông báo
-    created_at: datetime       # Thời điểm tạo thông báo
+    device_id: str             # FK → devices/{id}
+    created_at: datetime       # Thời điểm tạo
 
     class Config:
         from_attributes = True
+

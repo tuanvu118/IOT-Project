@@ -1,67 +1,70 @@
-from datetime import datetime, timezone
-from typing import Optional
+from typing import List, Optional
 from fastapi import HTTPException, status
-from google.cloud import firestore as fs
+from google.cloud.firestore_v1 import ArrayUnion, ArrayRemove
 
 from app.core.firebase import get_firestore_client
 from app.entity.user import UserEntity
 from app.dto.user_dto import RegisterUserRequest, UpdateUserRequest
 
 
+# Mapping Firestore camelCase → Python snake_case
+def _doc_to_entity(doc_id: str, data: dict) -> UserEntity:
+    return UserEntity(
+        id=doc_id,
+        name=data.get("name", ""),
+        phone_number=data.get("phoneNumber", ""),
+        avatar_url=data.get("avatarUrl"),
+        address=data.get("address"),
+        date_of_birth=data.get("dateOfBirth"),
+        citizen_number=data.get("citizenNumber"),
+        sos_numbers=data.get("sosNumbers", []),
+        fcm_tokens=data.get("fcmTokens", []),
+        last_sign_in=data.get("lastSignIn"),
+    )
+
+
 class UserService:
     """
     Service xử lý nghiệp vụ liên quan đến User.
-    Tương tác trực tiếp với Firestore collection: users/{uid}
+    Tương tác với Firestore collection: users/{uid}
+
+    Firestore document dùng camelCase:
+      phoneNumber, avatarUrl, dateOfBirth, citizenNumber,
+      sosNumbers[], fcmTokens[], lastSignIn
     """
 
     def __init__(self):
         self.db = get_firestore_client()
         self.collection = self.db.collection("users")
 
-    # ─── Helper ───────────────────────────────────────────────────────────────
-
-    def _doc_to_entity(self, doc_id: str, data: dict) -> UserEntity:
-        return UserEntity(id=doc_id, **data)
-
     # ─── Public Methods ───────────────────────────────────────────────────────
 
     def register(self, uid: str, payload: RegisterUserRequest) -> UserEntity:
         """
         Tạo document user mới trong Firestore sau khi Firebase Auth đã tạo account.
-        Kiểm tra phone_number và citizen_number không trùng.
+        Kiểm tra phoneNumber không trùng.
         """
-        # Kiểm tra phone_number đã tồn tại chưa
-        existing = self.collection.where("phone_number", "==", payload.phone_number).limit(1).get()
+        existing = self.collection.where("phoneNumber", "==", payload.phone_number).limit(1).get()
         if list(existing):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Số điện thoại đã được sử dụng bởi tài khoản khác.",
             )
 
-        # Kiểm tra citizen_number nếu có
-        if payload.citizen_number:
-            existing_cn = self.collection.where("citizen_number", "==", payload.citizen_number).limit(1).get()
-            if list(existing_cn):
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Số CCCD/CMND đã được sử dụng bởi tài khoản khác.",
-                )
-
-        now = datetime.now(timezone.utc)
         data = {
-            "phone_number": payload.phone_number,
             "name": payload.name,
-            "avatar_url": payload.avatar_url,
+            "phoneNumber": payload.phone_number,
+            "avatarUrl": payload.avatar_url,
             "address": payload.address,
-            "date_of_birth": payload.date_of_birth.isoformat() if payload.date_of_birth else None,
-            "citizen_number": payload.citizen_number,
-            "status": "ACTIVE",
-            "created_at": now,
-            "updated_at": now,
+            "dateOfBirth": payload.date_of_birth,
+            "citizenNumber": payload.citizen_number,
+            "sosNumbers": [],
+            "fcmTokens": [],
+            "lastSignIn": None,
         }
 
         self.collection.document(uid).set(data)
-        return self._doc_to_entity(uid, data)
+        return _doc_to_entity(uid, data)
 
     def get_by_id(self, uid: str) -> UserEntity:
         """Lấy thông tin User theo Firebase UID."""
@@ -71,47 +74,72 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Không tìm thấy người dùng.",
             )
-        return self._doc_to_entity(uid, doc.to_dict())
+        return _doc_to_entity(uid, doc.to_dict())
 
     def update(self, uid: str, payload: UpdateUserRequest) -> UserEntity:
         """Cập nhật thông tin cá nhân của User (partial update)."""
         doc_ref = self.collection.document(uid)
-        doc = doc_ref.get()
-        if not doc.exists:
+        if not doc_ref.get().exists:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Không tìm thấy người dùng.",
             )
 
-        update_data: dict = {"updated_at": datetime.now(timezone.utc)}
-
+        update_data: dict = {}
         if payload.name is not None:
             update_data["name"] = payload.name
         if payload.avatar_url is not None:
-            update_data["avatar_url"] = payload.avatar_url
+            update_data["avatarUrl"] = payload.avatar_url
         if payload.address is not None:
             update_data["address"] = payload.address
         if payload.date_of_birth is not None:
-            update_data["date_of_birth"] = payload.date_of_birth.isoformat()
+            update_data["dateOfBirth"] = payload.date_of_birth
         if payload.citizen_number is not None:
-            # Kiểm tra citizen_number không trùng với user khác
-            existing_cn = self.collection.where("citizen_number", "==", payload.citizen_number).limit(1).get()
-            for doc_snap in existing_cn:
-                if doc_snap.id != uid:
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="Số CCCD/CMND đã được sử dụng bởi tài khoản khác.",
-                    )
-            update_data["citizen_number"] = payload.citizen_number
+            update_data["citizenNumber"] = payload.citizen_number
 
-        doc_ref.update(update_data)
-        updated_doc = doc_ref.get()
-        return self._doc_to_entity(uid, updated_doc.to_dict())
+        if update_data:
+            doc_ref.update(update_data)
 
-    def deactivate(self, uid: str) -> None:
-        """Vô hiệu hóa tài khoản User."""
+        return _doc_to_entity(uid, doc_ref.get().to_dict())
+
+    def add_sos_number(self, uid: str, phone_number: str) -> UserEntity:
+        """Thêm SĐT vào danh sách sosNumbers[] (không trùng lặp)."""
         doc_ref = self.collection.document(uid)
-        doc_ref.update({
-            "status": "INACTIVE",
-            "updated_at": datetime.now(timezone.utc),
-        })
+        if not doc_ref.get().exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
+        doc_ref.update({"sosNumbers": ArrayUnion([phone_number])})
+        return _doc_to_entity(uid, doc_ref.get().to_dict())
+
+    def remove_sos_number(self, uid: str, phone_number: str) -> UserEntity:
+        """Xóa SĐT khỏi danh sách sosNumbers[]."""
+        doc_ref = self.collection.document(uid)
+        if not doc_ref.get().exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
+        doc_ref.update({"sosNumbers": ArrayRemove([phone_number])})
+        return _doc_to_entity(uid, doc_ref.get().to_dict())
+
+    def register_fcm_token(self, uid: str, token: str) -> None:
+        """Thêm FCM token vào fcmTokens[] (dùng khi user login trên thiết bị mới)."""
+        doc_ref = self.collection.document(uid)
+        if not doc_ref.get().exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
+        doc_ref.update({"fcmTokens": ArrayUnion([token])})
+
+    def unregister_fcm_token(self, uid: str, token: str) -> None:
+        """Xóa FCM token khỏi fcmTokens[] (dùng khi user logout)."""
+        doc_ref = self.collection.document(uid)
+        if not doc_ref.get().exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
+        doc_ref.update({"fcmTokens": ArrayRemove([token])})
+
+    def update_last_sign_in(self, uid: str, sign_in_time: str) -> None:
+        """Cập nhật lastSignIn sau khi user đăng nhập thành công."""
+        self.collection.document(uid).update({"lastSignIn": sign_in_time})
+
+    def get_sos_numbers(self, uid: str) -> List[str]:
+        """Lấy danh sách SĐT SOS của User."""
+        doc = self.collection.document(uid).get()
+        if not doc.exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
+        return doc.to_dict().get("sosNumbers", [])
+

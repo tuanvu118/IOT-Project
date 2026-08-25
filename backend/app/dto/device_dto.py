@@ -1,36 +1,81 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 
 
 # ─── Request DTOs ────────────────────────────────────────────────────────────
 
 class CreateDeviceRequest(BaseModel):
-    """Payload tạo Device mới (thường do admin hoặc hệ thống thực hiện)."""
-    device_code: str
+    """Payload tạo Device mới (thường do admin/provisioning thực hiện)."""
+    name: str
     verification_code: str
-    anti_theft_enabled: bool = False
-    is_charging: bool = False
 
 
-class UpdateDeviceStatusRequest(BaseModel):
-    """Payload cập nhật trạng thái Device từ thiết bị IoT gửi lên."""
-    status: Optional[str] = None            # ONLINE | OFFLINE | LOST | ACCIDENT
-    anti_theft_enabled: Optional[bool] = None
-    battery_level: Optional[float] = None
-    is_charging: Optional[bool] = None
+class LinkDeviceRequest(BaseModel):
+    """Liên kết Device với tài khoản bằng verification_code."""
+    verification_code: str
+
+
+class UnlinkDeviceRequest(BaseModel):
+    """Huỷ liên kết Device khỏi tài khoản."""
+    device_id: str
+
+
+class UpdateDeviceConfigRequest(BaseModel):
+    """Cập nhật cấu hình thiết bị (chống trộm on/off)."""
+    anti_thief: bool
+
+
+class UpdateVehicleRequest(BaseModel):
+    """Cập nhật thông tin xe gắn với thiết bị."""
+    brand: Optional[str] = None
+    color: Optional[str] = None
+    license_plate: Optional[str] = None
+    model: Optional[str] = None
+
+
+class UpdateLocationRequest(BaseModel):
+    """Cập nhật vị trí GPS mới nhất của thiết bị."""
+    latitude: float
+    longitude: float
+
+
+# ─── Response Sub-models ──────────────────────────────────────────────────────
+
+class DeviceConfigResponse(BaseModel):
+    anti_thief: bool = False
+
+
+class DevicePropertiesResponse(BaseModel):
+    last_make_call_time: Optional[datetime] = None
+    last_send_sms_time: Optional[datetime] = None
+    last_push_notification_time: Optional[datetime] = None
+
+
+class VehicleInfoResponse(BaseModel):
+    brand: Optional[str] = None
+    color: Optional[str] = None
+    license_plate: Optional[str] = None
+    model: Optional[str] = None
+
+
+class LocationEntryResponse(BaseModel):
+    created_at: Optional[datetime] = None
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
 
 
 # ─── Response DTOs ────────────────────────────────────────────────────────────
 
 class DeviceResponse(BaseModel):
-    """Response trả về thông tin Device."""
+    """Response trả về thông tin Device đầy đủ với embedded sub-documents."""
     id: str
-    device_code: str
-    status: str
-    anti_theft_enabled: bool
-    battery_level: Optional[float] = None
-    is_charging: bool
-    last_connected_at: Optional[datetime] = None
-    created_at: datetime
-    updated_at: datetime
+    name: str
+    status: int
+    user_id: Optional[str] = None
+    verification_code: str
+    config: DeviceConfigResponse = DeviceConfigResponse()
+    properties: DevicePropertiesResponse = DevicePropertiesResponse()
+    vehicle: VehicleInfoResponse = VehicleInfoResponse()
+    locations: List[LocationEntryResponse] = []
+
