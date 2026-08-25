@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, status
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_admin
 from app.entity.user import UserEntity
 from app.service.device_service import DeviceService
 from app.dto.device_dto import (
@@ -62,7 +62,7 @@ def _to_response(device) -> DeviceResponse:
 )
 def create_device(
     payload: CreateDeviceRequest,
-    current_user: UserEntity = Depends(get_current_user),
+    current_user: UserEntity = Depends(require_admin),
 ):
     service = DeviceService()
     return _to_response(service.create(payload))

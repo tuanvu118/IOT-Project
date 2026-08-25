@@ -18,8 +18,8 @@ app = FastAPI(
     title="IoT Motorcycle Safety API",
     description=(
         "Backend API cho hệ thống IoT phát hiện và cảnh báo mất trộm, tai nạn xe máy.\n\n"
-        "**Authentication**: Tất cả endpoint (trừ `/auth/register` và `/auth/me`) yêu cầu "
-        "Firebase ID Token trong header `Authorization: Bearer <token>`."
+        "**Authentication**: Gọi `/auth/register` hoặc `/auth/login` để nhận JWT. "
+        "Các endpoint bảo vệ yêu cầu header `Authorization: Bearer <token>`."
     ),
     version="1.0.0",
     contact={

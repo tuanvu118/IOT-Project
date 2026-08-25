@@ -3,26 +3,19 @@ from pydantic import BaseModel
 
 
 class UserEntity(BaseModel):
-    """
-    Đại diện cho document trong Firestore collection: users/{uid}
-    Document ID = Firebase Auth UID
-
-    NoSQL schema:
-      - sosNumbers[]: danh sách SĐT SOS embedded trực tiếp
-      - fcmTokens[]: FCM push tokens embedded
-      - lastSignIn: lần đăng nhập cuối
-    """
-    id: str  # Firebase UID
-
+    id: str
+    email: str
     name: str
     phone_number: str
+    password_hash: Optional[str] = None
     avatar_url: Optional[str] = None
     address: Optional[str] = None
-    date_of_birth: Optional[str] = None       # Lưu dạng string (ISO date)
+    date_of_birth: Optional[str] = None
     citizen_number: Optional[str] = None
-    sos_numbers: List[str] = []               # Danh sách SĐT SOS (embedded)
-    fcm_tokens: List[str] = []                # FCM push tokens (embedded)
-    last_sign_in: Optional[str] = None        # Lần đăng nhập cuối (ISO string)
+    is_admin: bool = False
+    sos_numbers: List[str] = []
+    fcm_tokens: List[str] = []
+    last_sign_in: Optional[str] = None
 
     class Config:
         from_attributes = True

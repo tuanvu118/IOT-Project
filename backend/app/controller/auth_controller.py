@@ -1,97 +1,77 @@
 from fastapi import APIRouter, Depends, status
-from firebase_admin import auth as firebase_auth
-from fastapi import HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.core.firebase import get_firestore_client
+from app.core.config import settings
+from app.core.dependencies import get_current_user
+from app.core.security import create_access_token
+from app.dto.user_dto import AuthResponse, LoginRequest, RegisterUserRequest, UserResponse
+from app.entity.user import UserEntity
 from app.service.user_service import UserService
-from app.dto.user_dto import RegisterUserRequest, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-http_bearer = HTTPBearer()
 
 
-def _to_response(user) -> UserResponse:
+def _to_response(user: UserEntity) -> UserResponse:
     return UserResponse(
         id=user.id,
+        email=user.email,
         name=user.name,
         phone_number=user.phone_number,
         avatar_url=user.avatar_url,
         address=user.address,
         date_of_birth=user.date_of_birth,
         citizen_number=user.citizen_number,
+        is_admin=user.is_admin,
         sos_numbers=user.sos_numbers,
         fcm_tokens=user.fcm_tokens,
         last_sign_in=user.last_sign_in,
     )
 
 
+def _to_auth_response(user: UserEntity) -> AuthResponse:
+    access_token = create_access_token(
+        subject=user.id,
+        extra_claims={
+            "email": user.email,
+            "is_admin": user.is_admin,
+        },
+    )
+    return AuthResponse(
+        access_token=access_token,
+        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=_to_response(user),
+    )
+
+
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=AuthResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Đăng ký tài khoản mới",
-    description=(
-        "Tạo document User trong Firestore sau khi Firebase Auth đã tạo account. "
-        "Gửi kèm Firebase ID Token trong header Authorization."
-    ),
+    description="Tạo user trong Firestore, hash mật khẩu, và trả về JWT. Tài khoản mới mặc định isAdmin=false.",
 )
-def register(
-    payload: RegisterUserRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
-):
-    """
-    Luồng đăng ký:
-    1. Client tạo account trên Firebase Auth (email/phone).
-    2. Client nhận Firebase ID Token.
-    3. Client gọi API này với ID Token + thông tin bổ sung.
-    4. Backend verify token → lấy UID → tạo document trong Firestore.
-    """
-    token = credentials.credentials
-    try:
-        decoded_token = firebase_auth.verify_id_token(token)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không hợp lệ hoặc đã hết hạn.",
-        )
-
-    uid = decoded_token.get("uid")
-
-    # Kiểm tra user đã tồn tại chưa
-    db = get_firestore_client()
-    user_doc = db.collection("users").document(uid).get()
-    if user_doc.exists:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Tài khoản đã được đăng ký trong hệ thống.",
-        )
-
+def register(payload: RegisterUserRequest):
     service = UserService()
-    user = service.register(uid, payload)
-    return _to_response(user)
+    user = service.register(payload)
+    return _to_auth_response(user)
+
+
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    summary="Đăng nhập",
+    description="Kiểm tra email/password và trả về JWT do backend tự ký.",
+)
+def login(payload: LoginRequest):
+    service = UserService()
+    user = service.login(payload)
+    return _to_auth_response(user)
 
 
 @router.get(
     "/me",
     response_model=UserResponse,
     summary="Lấy thông tin tài khoản hiện tại",
-    description="Trả về thông tin User tương ứng với Firebase ID Token trong header.",
+    description="Trả về user từ JWT trong header Authorization: Bearer <token>.",
 )
-def get_me(
-    credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
-):
-    token = credentials.credentials
-    try:
-        decoded_token = firebase_auth.verify_id_token(token)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không hợp lệ hoặc đã hết hạn.",
-        )
-
-    uid = decoded_token.get("uid")
-    service = UserService()
-    user = service.get_by_id(uid)
-    return _to_response(user)
-
+def get_me(current_user: UserEntity = Depends(get_current_user)):
+    return _to_response(current_user)
