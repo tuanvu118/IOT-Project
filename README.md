@@ -1,16 +1,38 @@
-# React + Vite
+# 🛵 IoT Motorcycle Safety System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Hệ thống IoT phát hiện và cảnh báo mất trộm, tai nạn xe máy.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🏗️ Cấu Trúc Dự Án
 
-## React Compiler
+- **`backend/`**: Backend RESTful API xây dựng bằng **Python (FastAPI)**, Firebase Firestore, Firebase Auth, Cloudinary.
+- **`frontend/`**: Ứng dụng Web quản lý và giám sát xây dựng bằng **React + Vite**, React Router.
+- **`docker-compose.yml`**: Cấu hình khởi chạy toàn bộ hệ thống với tính năng **Live Hot-Reloading** cho cả Frontend và Backend.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ⚡ Khởi Động Nhanh Bằng Docker
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Chuẩn bị file cấu hình
+```bash
+# Tạo file .env cho backend
+copy backend\.env.example backend\.env
+
+# Đặt file Service Account Firebase vào backend/firebase-credentials.json
+```
+
+### 2. Khởi chạy toàn bộ hệ thống
+```bash
+docker compose up --build
+```
+
+### 3. Truy cập hệ thống
+- **Frontend App**: [http://localhost:5173](http://localhost:5173)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+## 📖 Hướng Dẫn Chi Tiết
+Xem tài liệu hướng dẫn đầy đủ tại: **[HUONG_DAN_CHAY_DOCKER.md](file:///d:/IOT/IOT-Project/HUONG_DAN_CHAY_DOCKER.md)**.
