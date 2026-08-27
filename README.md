@@ -4,30 +4,15 @@ Hệ thống IoT phát hiện và cảnh báo mất trộm, tai nạn xe máy.
 
 ---
 
-## 🏗️ Cấu Trúc Dự Án
+## ⚡ Khởi Động Dự Án (1 Lệnh Duy Nhất)
 
-- **`backend/`**: Backend RESTful API xây dựng bằng **Python (FastAPI)**, Firebase Firestore, Firebase Auth, Cloudinary.
-- **`frontend/`**: Ứng dụng Web quản lý và giám sát xây dựng bằng **React + Vite**, React Router.
-- **`docker-compose.yml`**: Cấu hình khởi chạy toàn bộ hệ thống với tính năng **Live Hot-Reloading** cho cả Frontend và Backend.
+Dự án đã cấu hình sẵn toàn bộ biến môi trường (`.env`) và cơ chế **Live Hot-Reload** (sửa code tự động cập nhật cả FE & BE). Người dùng chỉ cần chạy:
 
----
-
-## ⚡ Khởi Động Nhanh Bằng Docker
-
-### 1. Chuẩn bị file cấu hình
-```bash
-# Tạo file .env cho backend
-copy backend\.env.example backend\.env
-
-# Đặt file Service Account Firebase vào backend/firebase-credentials.json
-```
-
-### 2. Khởi chạy toàn bộ hệ thống
 ```bash
 docker compose up --build
 ```
 
-### 3. Truy cập hệ thống
+### 🌐 Địa chỉ truy cập:
 - **Frontend App**: [http://localhost:5173](http://localhost:5173)
 - **Backend API**: [http://localhost:8000](http://localhost:8000)
 - **Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)

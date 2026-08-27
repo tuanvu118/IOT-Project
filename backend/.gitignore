@@ -1,5 +1,5 @@
-﻿# Environment
-.env
+# Environment
+# .env is tracked for quick run
 .env.local
 
 # Firebase credentials (NEVER commit this!)
