@@ -2,11 +2,6 @@
 .env
 .env.local
 
-# Firebase credentials (NEVER commit this!)
-firebase-credentials.json
-*-credentials.json
-*-service-account.json
-
 # Python
 __pycache__/
 *.py[cod]
