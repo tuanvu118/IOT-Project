@@ -1,16 +1,23 @@
-# React + Vite
+# 🛵 IoT Motorcycle Safety System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Hệ thống IoT phát hiện và cảnh báo mất trộm, tai nạn xe máy.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ⚡ Khởi Động Dự Án (1 Lệnh Duy Nhất)
 
-## React Compiler
+Dự án đã cấu hình sẵn toàn bộ biến môi trường (`.env`) và cơ chế **Live Hot-Reload** (sửa code tự động cập nhật cả FE & BE). Người dùng chỉ cần chạy:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+docker compose up --build
+```
 
-## Expanding the ESLint configuration
+### 🌐 Địa chỉ truy cập:
+- **Frontend App**: [http://localhost:5173](http://localhost:5173)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 📖 Hướng Dẫn Chi Tiết
+Xem tài liệu hướng dẫn đầy đủ tại: **[HUONG_DAN_CHAY_DOCKER.md](file:///d:/IOT/IOT-Project/HUONG_DAN_CHAY_DOCKER.md)**.

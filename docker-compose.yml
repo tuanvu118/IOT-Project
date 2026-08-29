@@ -1,0 +1,54 @@
+services:
+  # ─── BACKEND SERVICE (FastAPI + Python) ────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: iot_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount toàn bộ thư mục backend vào container để kích hoạt Live Reload khi sửa code
+      - ./backend:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - FIREBASE_CREDENTIALS_PATH=/app/firebase-credentials.json
+    env_file:
+      - path: ./backend/.env
+        required: false
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+  # ─── FRONTEND SERVICE (React + Vite) ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: iot_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount thư mục frontend vào container để kích hoạt Live Reload khi sửa code
+      - ./frontend:/app
+      # Anonymous volume bảo vệ node_modules trong container không bị ghi đè bởi host
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    env_file:
+      - path: ./frontend/.env
+        required: false
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+# ─── NETWORKS ─────────────────────────────────────────────────────────────────
+networks:
+  iot-network:
+    driver: bridge
