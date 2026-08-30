@@ -64,17 +64,15 @@ class NotificationService:
         Lấy danh sách thông báo của User.
         Sắp xếp theo createdAt giảm dần (mới nhất trước).
         """
-        query = (
-            self.collection
-            .where("userId", "==", user_id)
-            .order_by("createdAt", direction="DESCENDING")
-        )
+        query = self.collection.where("userId", "==", user_id)
 
         if unread_only:
             query = query.where("isRead", "==", False)
 
-        docs = query.limit(limit).get()
-        return [_doc_to_entity(doc.id, doc.to_dict()) for doc in docs]
+        docs = query.get()
+        notifications = [_doc_to_entity(doc.id, doc.to_dict()) for doc in docs]
+        notifications.sort(key=lambda item: item.created_at, reverse=True)
+        return notifications[:limit]
 
     def mark_as_read(self, notification_id: str, user_id: str) -> NotificationEntity:
         """Đánh dấu một thông báo là đã đọc."""
@@ -93,6 +91,18 @@ class NotificationService:
 
         doc_ref.update({"isRead": True})
         data["isRead"] = True
+        return _doc_to_entity(notification_id, data)
+
+    def get_by_id(self, notification_id: str, user_id: str) -> NotificationEntity:
+        doc = self.collection.document(notification_id).get()
+
+        if not doc.exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thông báo.")
+
+        data = doc.to_dict()
+        if data.get("userId") != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền truy cập thông báo này.")
+
         return _doc_to_entity(notification_id, data)
 
     def mark_all_as_read(self, user_id: str) -> int:

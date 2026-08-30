@@ -1,20 +1,24 @@
 import { Outlet } from "react-router-dom";
 
 import Header from "../components/layout/Header";
+import AlertPopup from "../components/layout/AlertPopup";
 import UserSidebar from "../components/layout/UserSidebar";
+import "../styles/user-dashboard.css";
 
 function UserLayout() {
   return (
-    <div>
+    <div className="user-shell">
       <UserSidebar />
 
-      <div>
+      <div className="user-main-shell">
         <Header />
 
-        <main>
+        <main className="user-content">
           <Outlet />
         </main>
       </div>
+
+      <AlertPopup />
     </div>
   );
 }

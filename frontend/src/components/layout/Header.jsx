@@ -1,24 +1,242 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
+import {
+  getRecentAlerts,
+  getUnreadNotificationCount,
+  markAllNotificationsAsRead,
+} from "../../services/alertService";
+
+function getNotificationTone(notification) {
+  const type = String(notification.type || "").toLowerCase();
+  const title = String(notification.title || "").toLowerCase();
+
+  if (type.includes("accident") || title.includes("tai nạn") || title.includes("va chạm")) {
+    return "danger";
+  }
+
+  if (type.includes("battery") || title.includes("pin")) {
+    return "battery";
+  }
+
+  return "warning";
+}
+
+function formatNotificationTime(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+
+  if (diffMinutes < 1) return "Vừa xong";
+  if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return diffDays === 1 ? "Hôm qua" : `${diffDays} ngày trước`;
+}
+
+function NotificationIcon({ tone }) {
+  if (tone === "danger") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 4 21 20H3z" />
+        <path d="M12 9v5M12 17h.01" />
+      </svg>
+    );
+  }
+
+  if (tone === "battery") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 5h6v3H9zM8 8h8v12H8z" />
+        <path d="M11 11h2M11 14h2" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3 20 6v6c0 5-3.2 8.1-8 10-4.8-1.9-8-5-8-10V6z" />
+      <path d="M9 12h6M15 9l-6 6" />
+    </svg>
+  );
+}
 
 function Header() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const dropdownRef = useRef(null);
+  const displayName = user?.name || user?.email?.split("@")[0] || "Người dùng";
+  const avatarUrl =
+    user?.avatarUrl ||
+    user?.avatar_url ||
+    localStorage.getItem("user_custom_avatar") ||
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=96&q=80";
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUnreadCount() {
+      try {
+        const data = await getUnreadNotificationCount();
+        if (isMounted) {
+          setUnreadCount(data?.unread_count || 0);
+        }
+      } catch {
+        if (isMounted) {
+          setUnreadCount(0);
+        }
+      }
+    }
+
+    if (user) {
+      loadUnreadCount();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const loadNotifications = async () => {
+    setIsLoading(true);
+
+    try {
+      const data = await getRecentAlerts(5);
+      setNotifications(data || []);
+    } catch {
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleNotifications = () => {
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+
+    if (nextOpen) {
+      loadNotifications();
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await markAllNotificationsAsRead();
+    setUnreadCount(0);
+    setNotifications((current) =>
+      current.map((notification) => ({
+        ...notification,
+        is_read: true,
+      })),
+    );
   };
 
   return (
-    <header>
-      <span>
-        Xin chào, {user?.name || "Người dùng"}
-      </span>
+    <header className="user-topbar">
+      <label className="user-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input type="search" placeholder="Tìm kiếm..." />
+      </label>
 
-      <button onClick={handleLogout}>
-        Đăng xuất
-      </button>
+      <div className="user-topbar-right">
+        <div className="notification-wrap" ref={dropdownRef}>
+          <button
+            className="user-bell"
+            type="button"
+            aria-label="Thông báo"
+            aria-expanded={isOpen}
+            onClick={toggleNotifications}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+              <path d="M10 21h4" />
+            </svg>
+            {unreadCount > 0 && <span />}
+          </button>
+
+          {isOpen && (
+            <section className="notification-dropdown">
+              <div className="notification-header">
+                <h2>Thông báo</h2>
+                <button type="button" onClick={handleMarkAllAsRead}>
+                  Đánh dấu đã đọc
+                </button>
+              </div>
+
+              <div className="notification-list">
+                {isLoading ? (
+                  <p className="notification-empty">Đang tải thông báo...</p>
+                ) : notifications.length > 0 ? (
+                  notifications.map((notification) => {
+                    const tone = getNotificationTone(notification);
+
+                    return (
+                      <Link
+                        className="notification-item"
+                        key={notification.id}
+                        to={`/alerts/${notification.id}`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {!notification.is_read && <span className="notification-unread-dot" />}
+                        <span className={`notification-icon ${tone}`}>
+                          <NotificationIcon tone={tone} />
+                        </span>
+                        <div>
+                          <div className="notification-item-top">
+                            <strong>{notification.title || "Thông báo"}</strong>
+                            <time>
+                              {formatNotificationTime(
+                                notification.created_at || notification.createdAt,
+                              )}
+                            </time>
+                          </div>
+                          <p>{notification.content || notification.description || "Chưa có nội dung."}</p>
+                        </div>
+                      </Link>
+                    );
+                  })
+                ) : (
+                  <p className="notification-empty">Chưa có thông báo nào.</p>
+                )}
+              </div>
+
+              <Link className="notification-all-link" to="/alerts" onClick={() => setIsOpen(false)}>
+                Xem tất cả thông báo →
+              </Link>
+            </section>
+          )}
+        </div>
+
+        <strong>{displayName}</strong>
+        <img className="user-avatar" src={avatarUrl} alt="Ảnh đại diện" />
+      </div>
+
+      {isOpen && <span className="notification-page-dim" aria-hidden="true" />}
     </header>
   );
 }

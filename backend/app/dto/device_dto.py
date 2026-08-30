@@ -11,6 +11,16 @@ class CreateDeviceRequest(BaseModel):
     verification_code: str
 
 
+class AddUserDeviceRequest(BaseModel):
+    """Payload cho user thêm thiết bị vào tài khoản bằng mã thiết bị được cung cấp."""
+    verification_code: str
+    name: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    color: Optional[str] = None
+    license_plate: Optional[str] = None
+
+
 class LinkDeviceRequest(BaseModel):
     """Liên kết Device với tài khoản bằng verification_code."""
     verification_code: str
@@ -24,6 +34,11 @@ class UnlinkDeviceRequest(BaseModel):
 class UpdateDeviceConfigRequest(BaseModel):
     """Cập nhật cấu hình thiết bị (chống trộm on/off)."""
     anti_thief: bool
+
+
+class UpdateDeviceStatusRequest(BaseModel):
+    """Cập nhật trạng thái trực tuyến/ngoại tuyến (1 = Online, 0 = Offline)."""
+    status: int
 
 
 class UpdateVehicleRequest(BaseModel):

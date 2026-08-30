@@ -50,6 +50,19 @@ def get_unread_count(current_user: UserEntity = Depends(get_current_user)):
     return {"unread_count": count}
 
 
+@router.get(
+    "/{notification_id}",
+    response_model=NotificationResponse,
+    summary="Lấy chi tiết thông báo",
+)
+def get_notification_detail(
+    notification_id: str,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = NotificationService()
+    return _to_response(service.get_by_id(notification_id, current_user.id))
+
+
 @router.put(
     "/{notification_id}/read",
     response_model=NotificationResponse,

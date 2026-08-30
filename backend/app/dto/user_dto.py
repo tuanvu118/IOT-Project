@@ -18,8 +18,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class UpdateUserRequest(BaseModel):
     name: Optional[str] = None
+    phone_number: Optional[str] = None
     avatar_url: Optional[str] = None
     address: Optional[str] = None
     date_of_birth: Optional[str] = None

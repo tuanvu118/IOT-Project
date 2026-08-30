@@ -6,9 +6,11 @@ from app.entity.user import UserEntity
 from app.service.device_service import DeviceService
 from app.dto.device_dto import (
     CreateDeviceRequest,
+    AddUserDeviceRequest,
     LinkDeviceRequest,
     UnlinkDeviceRequest,
     UpdateDeviceConfigRequest,
+    UpdateDeviceStatusRequest,
     UpdateVehicleRequest,
     UpdateLocationRequest,
     DeviceResponse,
@@ -68,6 +70,35 @@ def create_device(
     return _to_response(service.create(payload))
 
 
+@router.post(
+    "/user-add",
+    response_model=DeviceResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Người dùng thêm thiết bị bằng mã",
+    description="Cho phép người dùng thêm thiết bị IoT vào tài khoản bằng mã xác thực (verificationCode) được in trên thiết bị. Hệ thống sẽ đối chiếu với cơ sở dữ liệu để kích hoạt.",
+)
+def add_user_device(
+    payload: AddUserDeviceRequest,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = DeviceService()
+    return _to_response(service.add_device_by_user(current_user.id, payload))
+
+
+@router.post(
+    "/user-create",
+    response_model=DeviceResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+def user_create_device_alias(
+    payload: AddUserDeviceRequest,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = DeviceService()
+    return _to_response(service.add_device_by_user(current_user.id, payload))
+
+
 @router.get(
     "/my-devices",
     response_model=List[DeviceResponse],
@@ -77,6 +108,17 @@ def create_device(
 def get_my_devices(current_user: UserEntity = Depends(get_current_user)):
     service = DeviceService()
     return [_to_response(d) for d in service.get_by_user(current_user.id)]
+
+
+@router.get(
+    "/available",
+    response_model=List[DeviceResponse],
+    summary="Lấy danh sách thiết bị chưa liên kết",
+    description="Trả về các thiết bị IoT chưa thuộc về user nào (userId == None) để người dùng có thể chọn liên kết.",
+)
+def get_available_devices(current_user: UserEntity = Depends(get_current_user)):
+    service = DeviceService()
+    return [_to_response(d) for d in service.get_unlinked_devices()]
 
 
 @router.get(
@@ -141,6 +183,21 @@ def update_config(
     return _to_response(service.update_config(current_user.id, device_id, payload))
 
 
+@router.patch(
+    "/{device_id}/status",
+    response_model=DeviceResponse,
+    summary="Cập nhật trạng thái trực tuyến / ngoại tuyến",
+    description="Chuyển trạng thái hoạt động của thiết bị (1: Trực tuyến, 0: Ngoại tuyến). Chỉ owner mới được cập nhật.",
+)
+def update_status(
+    device_id: str,
+    payload: UpdateDeviceStatusRequest,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = DeviceService()
+    return _to_response(service.update_status(current_user.id, device_id, payload))
+
+
 # ─── Vehicle ───────────────────────────────────────────────────────────────────
 
 @router.patch(
@@ -173,5 +230,3 @@ def update_location(
     """Không cần auth — thiết bị IoT gọi trực tiếp."""
     service = DeviceService()
     return _to_response(service.update_location(device_id, payload))
-
-

@@ -34,6 +34,7 @@ import EditVehicle from "../pages/user/vehicle/EditVehicle";
 import Devices from "../pages/user/device/Devices";
 import DeviceDetail from "../pages/user/device/DeviceDetail";
 import LinkDevice from "../pages/user/device/LinkDevice";
+import AddDevice from "../pages/user/device/AddDevice";
 
 // Sensor
 import SensorData from "../pages/user/sensor/SensorData";
@@ -55,7 +56,7 @@ import EditUser from "../pages/admin/users/EditUser";
 // Device management
 import AdminDeviceList from "../pages/admin/devices/DeviceList";
 import AdminDeviceDetail from "../pages/admin/devices/DeviceDetail";
-import AddDevice from "../pages/admin/devices/AddDevice";
+import AdminAddDevice from "../pages/admin/devices/AddDevice";
 import EditDevice from "../pages/admin/devices/EditDevice";
 
 // 404
@@ -95,6 +96,7 @@ function AppRoutes() {
 
         {/* Devices */}
         <Route path="/devices" element={<Devices />} />
+        <Route path="/devices/add" element={<AddDevice />} />
         <Route path="/devices/link" element={<LinkDevice />} />
         <Route path="/devices/:id" element={<DeviceDetail />} />
         <Route path="/devices/:id/sensors" element={<SensorData />} />
@@ -127,7 +129,7 @@ function AppRoutes() {
 
         {/* Device Management */}
         <Route path="devices" element={<AdminDeviceList />} />
-        <Route path="devices/add" element={<AddDevice />} />
+        <Route path="devices/add" element={<AdminAddDevice />} />
         <Route path="devices/:id" element={<AdminDeviceDetail />} />
         <Route path="devices/:id/edit" element={<EditDevice />} />
       </Route>

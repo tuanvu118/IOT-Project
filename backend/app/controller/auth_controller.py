@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, status
 from app.core.config import settings
 from app.core.dependencies import get_current_user
 from app.core.security import create_access_token
-from app.dto.user_dto import AuthResponse, LoginRequest, RegisterUserRequest, UserResponse
+from app.dto.user_dto import AuthResponse, ChangePasswordRequest, LoginRequest, RegisterUserRequest, UserResponse
 from app.entity.user import UserEntity
 from app.service.user_service import UserService
 
@@ -75,3 +75,18 @@ def login(payload: LoginRequest):
 )
 def get_me(current_user: UserEntity = Depends(get_current_user)):
     return _to_response(current_user)
+
+
+@router.post(
+    "/change-password",
+    status_code=status.HTTP_200_OK,
+    summary="Đổi mật khẩu",
+    description="Đổi mật khẩu cho người dùng hiện tại.",
+)
+def change_password(
+    payload: ChangePasswordRequest,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = UserService()
+    service.change_password(current_user.id, payload.current_password, payload.new_password)
+    return {"message": "Đổi mật khẩu thành công."}

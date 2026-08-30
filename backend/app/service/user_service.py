@@ -109,6 +109,15 @@ class UserService:
         update_data: dict = {}
         if payload.name is not None:
             update_data["name"] = payload.name
+        if payload.phone_number is not None:
+            existing_phone = self.collection.where("phoneNumber", "==", payload.phone_number).limit(1).get()
+            for phone_doc in existing_phone:
+                if phone_doc.id != uid:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Số điện thoại đã được sử dụng bởi tài khoản khác.",
+                    )
+            update_data["phoneNumber"] = payload.phone_number
         if payload.avatar_url is not None:
             update_data["avatarUrl"] = payload.avatar_url
         if payload.address is not None:
@@ -122,6 +131,24 @@ class UserService:
             doc_ref.update(update_data)
 
         return _doc_to_entity(uid, doc_ref.get().to_dict())
+
+    def change_password(self, uid: str, current_password: str, new_password: str) -> None:
+        doc_ref = self.collection.document(uid)
+        doc = doc_ref.get()
+        if not doc.exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy người dùng.",
+            )
+
+        data = doc.to_dict()
+        if not verify_password(current_password, data.get("passwordHash", "")):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mật khẩu hiện tại không chính xác.",
+            )
+
+        doc_ref.update({"passwordHash": hash_password(new_password)})
 
     def add_sos_number(self, uid: str, phone_number: str) -> UserEntity:
         doc_ref = self.collection.document(uid)
