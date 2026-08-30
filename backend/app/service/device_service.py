@@ -62,6 +62,7 @@ def _doc_to_entity(doc_id: str, data: dict) -> DeviceEntity:
         status=data.get("status", 0),
         user_id=data.get("userId"),
         verification_code=data.get("verificationCode", ""),
+        secret_code=data.get("secretCode"),
         config=_parse_config(data.get("config", {})),
         properties=_parse_properties(data.get("properties", {})),
         vehicle=_parse_vehicle(data.get("vehicle", {})),
@@ -75,7 +76,7 @@ class DeviceService:
     Tương tác với Firestore collection: devices/{id}
 
     Firestore document dùng camelCase:
-      userId, verificationCode, config.antiThief,
+      userId, verificationCode, secretCode, config.antiThief,
       properties.lastMakeCallTime/lastSendSmsTime/lastPushNotificationTime,
       vehicle.brand/color/licensePlate/model,
       locations[].createdAt/longitude/latitude
@@ -101,6 +102,7 @@ class DeviceService:
             "status": 0,
             "userId": None,
             "verificationCode": payload.verification_code,
+            "secretCode": payload.secret_code or "123456",
             "config": {"antiThief": False},
             "properties": {
                 "lastMakeCallTime": None,
@@ -121,17 +123,26 @@ class DeviceService:
 
     def add_device_by_user(self, user_id: str, payload: AddUserDeviceRequest) -> DeviceEntity:
         """
-        Người dùng thêm thiết bị vào tài khoản bằng mã thiết bị (verificationCode).
+        Người dùng thêm thiết bị vào tài khoản bằng Mã thiết bị (verificationCode)
+        và Mã xác nhận bí mật (secretCode).
         Hệ thống đối chiếu với cơ sở dữ liệu:
-        - Nếu mã không tồn tại: Báo lỗi 404
-        - Nếu thiết bị đã được kích hoạt bởi tài khoản khác: Báo lỗi 409
-        - Nếu hợp lệ: Liên kết với user_id và cập nhật tên/thông tin phương tiện
+        - Nếu mã thiết bị không tồn tại: Báo lỗi 404
+        - Nếu mã xác nhận bí mật không khớp: Báo lỗi 400
+        - Nếu thiết bị đã được sở hữu bởi tài khoản khác: Báo lỗi 409
+        - Nếu hợp lệ: Cập nhật quyền sở hữu (userId = user_id)
         """
-        code = (payload.verification_code or "").strip()
+        code = (payload.verification_code or "").strip().upper()
+        secret = (payload.secret_code or "").strip()
+
         if not code:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Mã thiết bị không được để trống.",
+                detail="Vui lòng nhập mã thiết bị IoT.",
+            )
+        if not secret:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Vui lòng nhập mã xác nhận bí mật của thiết bị.",
             )
 
         docs = self.collection.where("verificationCode", "==", code).limit(1).get()
@@ -145,16 +156,24 @@ class DeviceService:
         doc = docs_list[0]
         data = doc.to_dict()
 
+        # Đối chiếu mã xác nhận bí mật (secretCode)
+        expected_secret = data.get("secretCode")
+        if expected_secret and str(expected_secret).strip() != secret:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mã xác nhận bảo mật của thiết bị không chính xác. Vui lòng kiểm tra lại tem bảo mật trên thiết bị.",
+            )
+
         current_owner = data.get("userId")
         if current_owner is not None:
             if current_owner == user_id:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="Thiết bị này đã được liên kết với tài khoản của bạn trước đó.",
+                    detail="Thiết bị này đã thuộc sở hữu của tài khoản bạn.",
                 )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Thiết bị này đã được kích hoạt / liên kết với một tài khoản khác.",
+                detail="Thiết bị này đã được kích hoạt và thuộc sở hữu của một tài khoản khác.",
             )
 
         update_data = {
@@ -186,12 +205,18 @@ class DeviceService:
         updated_doc = self.collection.document(doc.id).get()
         return _doc_to_entity(doc.id, updated_doc.to_dict())
 
-    def get_by_id(self, device_id: str) -> DeviceEntity:
-        """Lấy thông tin Device theo ID."""
+    def get_by_id(self, device_id: str, user_id: Optional[str] = None) -> DeviceEntity:
+        """Lấy thông tin Device theo ID. Kiểm tra quyền sở hữu nếu không phải admin."""
         doc = self.collection.document(device_id).get()
         if not doc.exists:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
-        return _doc_to_entity(device_id, doc.to_dict())
+        data = doc.to_dict()
+        if user_id and data.get("userId") != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền truy cập thiết bị này.",
+            )
+        return _doc_to_entity(device_id, data)
 
     def get_by_user(self, user_id: str) -> List[DeviceEntity]:
         """Lấy danh sách Device đang thuộc về User (userId == user_id)."""
@@ -199,45 +224,92 @@ class DeviceService:
         return [_doc_to_entity(d.id, d.to_dict()) for d in docs]
 
     def get_unlinked_devices(self) -> List[DeviceEntity]:
-        """Lấy danh sách Device chưa được liên kết (userId == None)."""
+        """Lấy danh sách Device chưa được liên kết trong kho (Dành riêng cho Admin)."""
         docs = self.collection.where("userId", "==", None).get()
         return [_doc_to_entity(d.id, d.to_dict()) for d in docs]
 
     # ─── Link / Unlink ────────────────────────────────────────────────────────
 
-    def link_device(self, user_id: str, verification_code: str) -> DeviceEntity:
+    def link_device_to_vehicle(
+        self,
+        user_id: str,
+        device_id_or_code: str,
+        brand: Optional[str] = None,
+        model: Optional[str] = None,
+        license_plate: Optional[str] = None,
+        color: Optional[str] = None,
+    ) -> DeviceEntity:
         """
-        Liên kết Device với User bằng verificationCode.
-        Device phải chưa được liên kết (userId == None).
+        Liên kết thiết bị IoT THUỘC SỞ HỮU CỦA USER với một phương tiện (xe).
+        Chỉ cho phép liên kết nếu thiết bị đã thuộc sở hữu của user_id (userId == user_id).
         """
-        docs = self.collection.where("verificationCode", "==", verification_code).limit(1).get()
-        docs_list = list(docs)
-        if not docs_list:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị với mã xác thực này.")
-
-        doc = docs_list[0]
-        data = doc.to_dict()
-        if data.get("userId") is not None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Thiết bị đã được liên kết với tài khoản khác.")
-
-        self.collection.document(doc.id).update({"userId": user_id})
-        data["userId"] = user_id
-        return _doc_to_entity(doc.id, data)
-
-    def unlink_device(self, user_id: str, device_id: str) -> DeviceEntity:
-        """Huỷ liên kết Device. Chỉ owner mới được huỷ."""
-        doc_ref = self.collection.document(device_id)
+        # Tìm theo document ID hoặc theo verificationCode
+        doc_ref = self.collection.document(device_id_or_code)
         doc = doc_ref.get()
+
         if not doc.exists:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+            docs = list(self.collection.where("verificationCode", "==", device_id_or_code).limit(1).get())
+            if not docs:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Không tìm thấy thiết bị.",
+                )
+            doc = docs[0]
+            doc_ref = self.collection.document(doc.id)
 
         data = doc.to_dict()
         if data.get("userId") != user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền huỷ liên kết thiết bị này.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Thiết bị này không thuộc quyền sở hữu của bạn. Vui lòng thêm thiết bị vào tài khoản bằng Mã thiết bị và Mã xác nhận trước.",
+            )
 
-        doc_ref.update({"userId": None})
+        vehicle_data = {
+            "brand": brand.strip() if brand else data.get("vehicle", {}).get("brand"),
+            "model": model.strip() if model else data.get("vehicle", {}).get("model"),
+            "licensePlate": license_plate.strip() if license_plate else data.get("vehicle", {}).get("licensePlate"),
+            "color": color.strip() if color else data.get("vehicle", {}).get("color"),
+        }
+
+        doc_ref.update({"vehicle": vehicle_data})
+        updated_data = doc_ref.get().to_dict()
+        return _doc_to_entity(doc.id, updated_data)
+
+    def unlink_device(self, user_id: str, device_id: str) -> DeviceEntity:
+        """Xóa/gỡ thiết bị khỏi tài khoản (trả về trạng thái chưa sở hữu trong kho) và hủy liên kết phương tiện."""
+        doc_ref = self.collection.document(device_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            docs = list(self.collection.where("verificationCode", "==", device_id).limit(1).get())
+            if docs:
+                doc = docs[0]
+                doc_ref = self.collection.document(doc.id)
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+
+        data = doc.to_dict()
+        if data.get("userId") != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền quản lý thiết bị này.")
+
+        # Xóa quyền sở hữu (userId = None), ngắt kết nối và xóa thông tin xe gắn kèm
+        doc_ref.update({
+            "userId": None,
+            "status": 0,
+            "vehicle": {
+                "brand": None,
+                "color": None,
+                "licensePlate": None,
+                "model": None,
+            },
+            "config": {
+                "antiThief": False,
+            },
+        })
         data["userId"] = None
-        return _doc_to_entity(device_id, data)
+        data["status"] = 0
+        data["vehicle"] = {"brand": None, "color": None, "licensePlate": None, "model": None}
+        data["config"] = {"antiThief": False}
+        return _doc_to_entity(doc.id, data)
 
     # ─── Config & Status ──────────────────────────────────────────────────────
 
@@ -246,26 +318,38 @@ class DeviceService:
         doc_ref = self.collection.document(device_id)
         doc = doc_ref.get()
         if not doc.exists:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+            docs = list(self.collection.where("verificationCode", "==", device_id).limit(1).get())
+            if docs:
+                doc = docs[0]
+                doc_ref = self.collection.document(doc.id)
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+
         if doc.to_dict().get("userId") != user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền cập nhật thiết bị này.")
 
         doc_ref.update({"config.antiThief": payload.anti_thief})
-        return _doc_to_entity(device_id, doc_ref.get().to_dict())
+        return _doc_to_entity(doc.id, doc_ref.get().to_dict())
 
     def update_status(self, user_id: str, device_id: str, payload: UpdateDeviceStatusRequest) -> DeviceEntity:
         """Cập nhật trạng thái status (0 = offline, 1 = online). Chỉ owner mới được cập nhật."""
         doc_ref = self.collection.document(device_id)
         doc = doc_ref.get()
         if not doc.exists:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+            docs = list(self.collection.where("verificationCode", "==", device_id).limit(1).get())
+            if docs:
+                doc = docs[0]
+                doc_ref = self.collection.document(doc.id)
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+
         if doc.to_dict().get("userId") != user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền cập nhật thiết bị này.")
 
         # Status: 1 (Online) hoặc 0 (Offline)
         new_status = 1 if payload.status == 1 else 0
         doc_ref.update({"status": new_status})
-        return _doc_to_entity(device_id, doc_ref.get().to_dict())
+        return _doc_to_entity(doc.id, doc_ref.get().to_dict())
 
     # ─── Vehicle ──────────────────────────────────────────────────────────────
 
@@ -274,7 +358,13 @@ class DeviceService:
         doc_ref = self.collection.document(device_id)
         doc = doc_ref.get()
         if not doc.exists:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+            docs = list(self.collection.where("verificationCode", "==", device_id).limit(1).get())
+            if docs:
+                doc = docs[0]
+                doc_ref = self.collection.document(doc.id)
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+
         if doc.to_dict().get("userId") != user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền cập nhật thiết bị này.")
 
@@ -290,7 +380,7 @@ class DeviceService:
 
         if vehicle_update:
             doc_ref.update(vehicle_update)
-        return _doc_to_entity(device_id, doc_ref.get().to_dict())
+        return _doc_to_entity(doc.id, doc_ref.get().to_dict())
 
     # ─── Location ─────────────────────────────────────────────────────────────
 

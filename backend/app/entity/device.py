@@ -49,7 +49,8 @@ class DeviceEntity(BaseModel):
     name: str                       # Tên thiết bị
     status: int = 0                 # Trạng thái (number)
     user_id: Optional[str] = None   # FK → users/{uid}; None nếu chưa liên kết
-    verification_code: str          # Mã dùng để liên kết thiết bị (UNIQUE)
+    verification_code: str          # Mã thiết bị (UNIQUE, VD: IOT-001)
+    secret_code: Optional[str] = None # Mã xác thực bí mật (PIN/Secret code của thiết bị)
 
     config: DeviceConfig = DeviceConfig()
     properties: DeviceProperties = DeviceProperties()

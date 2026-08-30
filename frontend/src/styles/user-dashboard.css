@@ -347,6 +347,18 @@
   object-fit: cover;
 }
 
+.user-avatar-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  user-select: none;
+  border: 1.5px solid #dbeafe;
+}
+
 .user-content {
   padding: 50px 48px;
 }

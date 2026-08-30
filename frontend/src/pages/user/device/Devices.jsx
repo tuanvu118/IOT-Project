@@ -91,11 +91,12 @@ function Devices() {
     try {
       // 1. Unlink via API
       try {
-        if (device.id) {
-          await unlinkDevice(device.id);
+        const targetId = device.id || device.verification_code || code;
+        if (targetId) {
+          await unlinkDevice(targetId);
         }
       } catch (apiErr) {
-        // Backend optional
+        console.warn("Unlink API warning:", apiErr);
       }
 
       // 2. Remove from custom_linked_devices
@@ -105,16 +106,28 @@ function Devices() {
       );
       localStorage.setItem("custom_linked_devices", JSON.stringify(updatedLocal));
 
-      // 3. Update custom_vehicles if linked
+      // 3. Preserve the vehicle in custom_vehicles as an unlinked vehicle
+      const v = device.vehicle;
+      const normalize = (str) => (str || "").toString().trim().toLowerCase().replace(/[\s.-]/g, "");
+      const plate = v?.license_plate || v?.licensePlate;
+      const targetPlate = normalize(plate);
+
       const customVehicles = JSON.parse(localStorage.getItem("custom_vehicles") || "[]");
-      const updatedVehicles = customVehicles.map((v) => {
+      let foundInCustom = false;
+
+      const updatedVehicles = customVehicles.map((item) => {
+        const itemPlate = normalize(
+          item.vehicle?.license_plate || item.vehicle?.licensePlate || item.licensePlate || item.license_plate
+        );
         if (
-          v.name === code ||
-          v.verification_code === code ||
-          v.deviceId === device.id
+          item.name === code ||
+          item.verification_code === code ||
+          item.deviceId === device.id ||
+          (targetPlate && itemPlate === targetPlate)
         ) {
+          foundInCustom = true;
           return {
-            ...v,
+            ...item,
             name: null,
             verification_code: null,
             deviceId: null,
@@ -122,8 +135,32 @@ function Devices() {
             isOnline: false,
           };
         }
-        return v;
+        return item;
       });
+
+      // If this vehicle was created with the device and wasn't in custom_vehicles yet, preserve it!
+      if (!foundInCustom && (v?.brand || v?.model || plate)) {
+        const newUnlinkedVehicle = {
+          id: `veh-${Date.now()}`,
+          brand: v.brand || "",
+          model: v.model || "",
+          color: v.color || "",
+          license_plate: plate || "",
+          vehicle: {
+            brand: v.brand || "",
+            model: v.model || "",
+            color: v.color || "",
+            license_plate: plate || "",
+          },
+          status: "unlinked",
+          isOnline: false,
+          name: null,
+          verification_code: null,
+          deviceId: null,
+        };
+        updatedVehicles.push(newUnlinkedVehicle);
+      }
+
       localStorage.setItem("custom_vehicles", JSON.stringify(updatedVehicles));
 
       // 4. Update UI state
@@ -246,7 +283,30 @@ function Devices() {
                       <td className="device-code-cell">
                         <strong>{code}</strong>
                       </td>
-                      <td className="device-vehicle-cell">{vehicleName}</td>
+                      <td className="device-vehicle-cell">
+                        {hasVehicle ? (
+                          vehicleName
+                        ) : (
+                          <Link
+                            to="/devices/link"
+                            title="Nhấn để liên kết phương tiện với thiết bị này"
+                            style={{
+                              color: "#2563eb",
+                              fontWeight: "600",
+                              textDecoration: "none",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              background: "#eff6ff",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                            }}
+                          >
+                            + Liên kết xe
+                          </Link>
+                        )}
+                      </td>
                       <td className="device-plate-cell">{licensePlate}</td>
                       <td className="device-status-cell">
                         <div className="device-status-cell-inner">

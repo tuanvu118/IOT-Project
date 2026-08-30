@@ -9,11 +9,13 @@ class CreateDeviceRequest(BaseModel):
     """Payload tạo Device mới (thường do admin/provisioning thực hiện)."""
     name: str
     verification_code: str
+    secret_code: Optional[str] = "123456"
 
 
 class AddUserDeviceRequest(BaseModel):
-    """Payload cho user thêm thiết bị vào tài khoản bằng mã thiết bị được cung cấp."""
+    """Payload cho user thêm thiết bị vào tài khoản bằng mã thiết bị và mã xác nhận bí mật."""
     verification_code: str
+    secret_code: str
     name: Optional[str] = None
     brand: Optional[str] = None
     model: Optional[str] = None
@@ -22,8 +24,13 @@ class AddUserDeviceRequest(BaseModel):
 
 
 class LinkDeviceRequest(BaseModel):
-    """Liên kết Device với tài khoản bằng verification_code."""
-    verification_code: str
+    """Liên kết Device với phương tiện của user."""
+    device_id: Optional[str] = None
+    verification_code: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    color: Optional[str] = None
+    license_plate: Optional[str] = None
 
 
 class UnlinkDeviceRequest(BaseModel):

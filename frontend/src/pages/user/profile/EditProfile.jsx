@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
 import { getMyProfile, updateMyProfile, uploadAvatar, addSosNumber, removeSosNumber } from "../../../services/userService";
+import { validateFullName, validatePhoneNumber, validateCitizenNumber } from "../../../utils/validators";
 
 function normalizePhones(phones) {
   return [...new Set(phones.map((phone) => phone.trim()).filter(Boolean))];
@@ -58,14 +59,14 @@ function EditProfile() {
         if (isMounted && authUser) {
           const sos = authUser.sosNumbers || authUser.sos_numbers || [];
           setFormData({
-            name: authUser.name || "Nguyễn Văn An",
-            email: authUser.email || "nguyenvan.an@example.com",
-            phoneNumber: authUser.phoneNumber || authUser.phone_number || "0987654321",
-            address: authUser.address || "Số 1 Đại Cồ Việt, Phường Bách Khoa, Quận Hai Bà Trưng, Hà Nội",
-            dateOfBirth: authUser.dateOfBirth || authUser.date_of_birth || "1990-05-15",
-            citizenNumber: authUser.citizenNumber || authUser.citizen_number || "001090123456",
+            name: authUser.name || "",
+            email: authUser.email || "",
+            phoneNumber: authUser.phoneNumber || authUser.phone_number || "",
+            address: authUser.address || "",
+            dateOfBirth: authUser.dateOfBirth || authUser.date_of_birth || "",
+            citizenNumber: authUser.citizenNumber || authUser.citizen_number || "",
           });
-          setSosPhones(sos.length > 0 ? sos : ["0912345678"]);
+          setSosPhones(sos.length > 0 ? sos : [""]);
           setInitialSosPhones(sos);
           const currentAvatar = authUser.avatarUrl || authUser.avatar_url || localStorage.getItem("user_custom_avatar");
           if (currentAvatar) {
@@ -133,14 +134,40 @@ function EditProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
-      setError("Vui lòng nhập Họ và tên.");
+    setError("");
+    setSuccess("");
+
+    const nameErr = validateFullName(formData.name);
+    if (nameErr) {
+      setError(nameErr);
       return;
     }
 
+    const phoneErr = validatePhoneNumber(formData.phoneNumber);
+    if (phoneErr) {
+      setError(phoneErr);
+      return;
+    }
+
+    const cccdErr = validateCitizenNumber(formData.citizenNumber);
+    if (cccdErr) {
+      setError(cccdErr);
+      return;
+    }
+
+    // Validate SOS numbers (if entered)
+    for (let i = 0; i < sosPhones.length; i++) {
+      const p = sosPhones[i].trim();
+      if (p) {
+        const sosErr = validatePhoneNumber(p);
+        if (sosErr) {
+          setError(`Số điện thoại khẩn cấp #${i + 1}: ${sosErr}`);
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
-    setError("");
-    setSuccess("");
 
     try {
       let finalAvatarUrl = avatarPreview;

@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import useAuth from "../../hooks/useAuth";
 import { getRecentAlerts } from "../../services/alertService";
-import { getMyDevices } from "../../services/deviceService";
+import { getMyDevices, updateDeviceConfig } from "../../services/deviceService";
 
 function getFirstItem(value) {
   return Array.isArray(value) && value.length > 0 ? value[0] : null;
@@ -30,12 +30,22 @@ function getDeviceOnline(device) {
 
 function mapDeviceToVehicle(device) {
   const vehicle = device?.vehicle || {};
+  const hasVehicle = Boolean(
+    vehicle.brand || vehicle.model || vehicle.license_plate || vehicle.licensePlate
+  );
+  const isOnline = getDeviceOnline(device);
 
   return {
     id: device?.id,
-    name: [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || device?.name,
+    name: [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || device?.name || "Phương tiện",
     plateNumber: vehicle.license_plate || vehicle.licensePlate,
-    status: device?.status || "Chưa có trạng thái",
+    hasVehicle,
+    status: hasVehicle
+      ? (isOnline ? "Đang hoạt động" : "Đang dừng/đỗ")
+      : "Chưa gắn xe",
+    statusText: hasVehicle
+      ? (isOnline ? "Đang hoạt động" : "Đang dừng/đỗ")
+      : "Chưa gắn xe",
     antiThief: device?.config?.anti_thief ?? device?.config?.antiThief,
     locations: device?.locations || [],
   };
@@ -120,9 +130,12 @@ function DashboardIcon({ type }) {
 
 function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [myDevices, setMyDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [recentAlerts, setRecentAlerts] = useState([]);
   const [loadError, setLoadError] = useState("");
+  const [togglingAntiTheft, setTogglingAntiTheft] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,7 +153,11 @@ function Dashboard() {
       if (!isMounted) return;
 
       if (devicesResult.status === "fulfilled") {
-        setMyDevices(devicesResult.value || []);
+        const devs = devicesResult.value || [];
+        setMyDevices(devs);
+        if (devs.length > 0) {
+          setSelectedDeviceId((prev) => prev || devs[0].id);
+        }
       }
 
       if (alertsResult.status === "fulfilled") {
@@ -161,19 +178,24 @@ function Dashboard() {
 
   const displayName = user?.name || user?.email?.split("@")[0] || "người dùng";
   const backendVehicles = myDevices.map(mapDeviceToVehicle);
-  const vehicles = user?.vehicles || user?.vehicleList || backendVehicles;
-  const devices = user?.devices || user?.deviceList || myDevices;
+  const vehicles = backendVehicles.length > 0 ? backendVehicles : (user?.vehicles || user?.vehicleList || []);
+  const devices = myDevices.length > 0 ? myDevices : (user?.devices || user?.deviceList || []);
   const alerts = user?.alerts || user?.recentAlerts || recentAlerts;
-  const currentVehicle = user?.currentVehicle || getFirstItem(vehicles);
-  const currentDevice = user?.currentDevice || getFirstItem(devices);
+
+  const currentDevice =
+    myDevices.find((d) => (d.id || d.verification_code) === selectedDeviceId) ||
+    getFirstItem(devices);
+  const currentVehicle =
+    currentDevice ? mapDeviceToVehicle(currentDevice) : getFirstItem(vehicles);
+
   const isDeviceOnline = getDeviceOnline(currentDevice);
   const batteryLevel = currentDevice?.batteryLevel ?? currentDevice?.battery ?? null;
   const currentAddress = getLocationText(currentDevice, currentVehicle, user);
   const antiTheftEnabled = Boolean(
-    currentVehicle?.antiTheftEnabled ??
-      currentVehicle?.antiThief ??
-      currentDevice?.antiTheftEnabled ??
-      currentDevice?.config?.antiThief,
+    currentDevice?.config?.anti_thief ??
+      currentDevice?.config?.antiThief ??
+      currentVehicle?.antiTheftEnabled ??
+      currentVehicle?.antiThief,
   );
   const plateText =
     currentVehicle?.plateNumber ||
@@ -181,17 +203,47 @@ function Dashboard() {
     currentVehicle?.plate ||
     "Chưa có biển số";
 
+  const handleToggleAntiTheft = async () => {
+    if (!currentDevice?.id) {
+      alert("Vui lòng kích hoạt và liên kết thiết bị IoT trước khi bật/tắt chống trộm.");
+      return;
+    }
+
+    const newAntiTheftState = !antiTheftEnabled;
+    setTogglingAntiTheft(true);
+    try {
+      await updateDeviceConfig(currentDevice.id, { anti_thief: newAntiTheftState });
+      setMyDevices((prev) =>
+        prev.map((d) =>
+          d.id === currentDevice.id
+            ? {
+                ...d,
+                config: {
+                  ...d.config,
+                  anti_thief: newAntiTheftState,
+                  antiThief: newAntiTheftState,
+                },
+              }
+            : d
+        )
+      );
+    } catch (err) {
+      alert("Không thể thay đổi trạng thái chống trộm: " + (err?.message || "Lỗi kết nối"));
+    } finally {
+      setTogglingAntiTheft(false);
+    }
+  };
+
   const stats = [
     {
       label: "PHƯƠNG TIỆN",
-      value:
-        currentVehicle?.statusText ||
-        (currentVehicle?.status === 1 ? "Đang hoạt động" : currentVehicle?.status) ||
-        "Chưa liên kết",
+      value: currentVehicle
+        ? (currentVehicle.statusText || currentVehicle.status || (isDeviceOnline ? "Đang hoạt động" : "Đang dừng/đỗ"))
+        : "Chưa liên kết xe",
       type: "bike",
     },
     {
-      label: currentDevice?.name || currentDevice?.id || "THIẾT BỊ IOT",
+      label: currentDevice?.name || currentDevice?.verification_code || currentDevice?.id || "THIẾT BỊ IOT",
       value: currentDevice ? (isDeviceOnline ? "Trực tuyến" : "Ngoại tuyến") : "Chưa kết nối",
       type: "device",
       online: isDeviceOnline,
@@ -216,15 +268,23 @@ function Dashboard() {
           <p>Đây là tình trạng phương tiện của bạn hôm nay.</p>
         </div>
 
-        <select aria-label="Chọn phương tiện" disabled={vehicles.length === 0}>
-          {vehicles.length > 0 ? (
-            vehicles.map((vehicle, index) => (
-              <option key={vehicle.id || vehicle.plateNumber || index}>
-                {getVehicleLabel(vehicle)}
-              </option>
-            ))
+        <select
+          aria-label="Chọn phương tiện"
+          value={selectedDeviceId}
+          onChange={(e) => setSelectedDeviceId(e.target.value)}
+          disabled={myDevices.length === 0}
+        >
+          {myDevices.length > 0 ? (
+            myDevices.map((d, index) => {
+              const v = mapDeviceToVehicle(d);
+              return (
+                <option key={d.id || index} value={d.id}>
+                  {getVehicleLabel(v)} ({d.verification_code || d.id})
+                </option>
+              );
+            })
           ) : (
-            <option>Chưa có phương tiện</option>
+            <option value="">Chưa có thiết bị / phương tiện</option>
           )}
         </select>
       </div>
@@ -258,13 +318,28 @@ function Dashboard() {
               </svg>
               <h2>Vị trí phương tiện</h2>
             </div>
-            <button type="button" disabled={!currentVehicle}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
+            <Link
+              to="/tracking"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                textDecoration: "none",
+                background: "#2563eb",
+                color: "#ffffff",
+                padding: "8px 14px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                fontSize: "13px",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="8" />
                 <path d="M14.5 9.5 10 14l-.5.5.5-4.5 4.5-.5z" />
               </svg>
               Theo dõi vị trí
-            </button>
+            </Link>
           </div>
 
           <div className={`dashboard-map ${!currentVehicle ? "is-empty" : ""}`}>
@@ -316,6 +391,17 @@ function Dashboard() {
                 className={antiTheftEnabled ? "is-enabled" : ""}
                 type="button"
                 aria-label="Bật tắt chống trộm"
+                onClick={handleToggleAntiTheft}
+                disabled={togglingAntiTheft || !currentDevice}
+                title={
+                  !currentDevice
+                    ? "Chưa có thiết bị để bật chống trộm"
+                    : togglingAntiTheft
+                      ? "Đang chuyển trạng thái..."
+                      : antiTheftEnabled
+                        ? "Nhấn để tắt chống trộm"
+                        : "Nhấn để bật chống trộm"
+                }
               >
                 <span />
               </button>

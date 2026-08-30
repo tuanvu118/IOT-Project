@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { changePassword } from "../../../services/authService";
+import { validatePassword } from "../../../utils/validators";
 
 function ChangePassword() {
   const navigate = useNavigate();
@@ -27,13 +28,14 @@ function ChangePassword() {
       return;
     }
 
-    if (!newPassword) {
-      setError("Vui lòng nhập mật khẩu mới.");
+    const passErr = validatePassword(newPassword);
+    if (passErr) {
+      setError(`Mật khẩu mới không hợp lệ: ${passErr}`);
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+    if (currentPassword === newPassword) {
+      setError("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
       return;
     }
 
@@ -41,6 +43,7 @@ function ChangePassword() {
       setError("Xác nhận mật khẩu mới không khớp.");
       return;
     }
+
 
     setLoading(true);
 

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getMyDevices, updateVehicle } from "../../../services/deviceService";
+import { validateLicensePlate } from "../../../utils/validators";
 
 function AddVehicle() {
   const navigate = useNavigate();
@@ -61,8 +62,14 @@ function AddVehicle() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.brand.trim() || !formData.model.trim() || !formData.license_plate.trim()) {
-      setError("Vui lòng điền đầy đủ các thông tin: Thương hiệu, Model và Biển số xe.");
+    if (!formData.brand.trim() || !formData.model.trim()) {
+      setError("Vui lòng nhập Thương hiệu và Model xe.");
+      return;
+    }
+
+    const plateErr = validateLicensePlate(formData.license_plate);
+    if (plateErr) {
+      setError(plateErr);
       return;
     }
 

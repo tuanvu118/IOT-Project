@@ -35,17 +35,16 @@ function Profile() {
 
   const user = profile || authUser || {};
 
-  const name = user.name || "Nguyễn Văn An";
-  const email = user.email || "nguyenvanan@gmail.com";
-  const phoneNumber = user.phone_number || user.phoneNumber || "0912 345 678";
-  const address = user.address || "Cầu Giấy, Hà Nội";
-  const dateOfBirth = user.date_of_birth || user.dateOfBirth || "15/06/2003";
-  const citizenNumber = user.citizen_number || user.citizenNumber || "001203xxxxxx";
+  const name = user.name || user.email?.split("@")[0] || "Người dùng";
+  const email = user.email || "—";
+  const phoneNumber = user.phone_number || user.phoneNumber || "—";
+  const address = user.address || "—";
+  const dateOfBirth = user.date_of_birth || user.dateOfBirth || "—";
+  const citizenNumber = user.citizen_number || user.citizenNumber || "—";
   const avatarUrl = user.avatar_url || user.avatarUrl || localStorage.getItem("user_custom_avatar") || "";
 
   // SOS contact list
   const sosNumbers = user.sos_numbers || user.sosNumbers || [];
-  const displaySosNumbers = sosNumbers.length > 0 ? sosNumbers : ["0987 654 321"];
 
   return (
     <div className="profile-page">
@@ -109,22 +108,22 @@ function Profile() {
           <div className="profile-details-row">
             <div className="profile-detail-col">
               <small>SỐ ĐIỆN THOẠI</small>
-              <strong>{phoneNumber}</strong>
+              <strong style={phoneNumber === "—" ? { color: "#94a3b8" } : {}}>{phoneNumber}</strong>
             </div>
             <div className="profile-detail-col">
               <small>ĐỊA CHỈ</small>
-              <strong>{address}</strong>
+              <strong style={address === "—" ? { color: "#94a3b8" } : {}}>{address}</strong>
             </div>
           </div>
 
           <div className="profile-details-row">
             <div className="profile-detail-col">
               <small>NGÀY SINH</small>
-              <strong>{dateOfBirth}</strong>
+              <strong style={dateOfBirth === "—" ? { color: "#94a3b8" } : {}}>{dateOfBirth}</strong>
             </div>
             <div className="profile-detail-col">
               <small>CCCD</small>
-              <strong>{citizenNumber}</strong>
+              <strong style={citizenNumber === "—" ? { color: "#94a3b8" } : {}}>{citizenNumber}</strong>
             </div>
           </div>
         </div>
@@ -140,14 +139,21 @@ function Profile() {
           </div>
 
           <div className="profile-sos-body">
-            {displaySosNumbers.map((phone, idx) => (
-              <div key={idx} className="profile-sos-field">
-                <small>
-                  SỐ ĐIỆN THOẠI KHẨN CẤP {displaySosNumbers.length > 1 ? `#${idx + 1}` : ""}
-                </small>
-                <strong>{phone}</strong>
+            {sosNumbers.length > 0 ? (
+              sosNumbers.map((phone, idx) => (
+                <div key={idx} className="profile-sos-field">
+                  <small>
+                    SỐ ĐIỆN THOẠI KHẨN CẤP {sosNumbers.length > 1 ? `#${idx + 1}` : ""}
+                  </small>
+                  <strong>{phone}</strong>
+                </div>
+              ))
+            ) : (
+              <div className="profile-sos-field">
+                <small>SỐ ĐIỆN THOẠI KHẨN CẤP</small>
+                <strong style={{ color: "#94a3b8", fontWeight: "400" }}>Chưa thiết lập số khẩn cấp</strong>
               </div>
-            ))}
+            )}
 
             <div className="profile-sos-note">
               <svg

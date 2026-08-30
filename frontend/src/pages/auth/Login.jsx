@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "../../hooks/useAuth";
 import { loginUser } from "../../services/authService";
+import { validateEmail } from "../../utils/validators";
 import "./Auth.css";
 
 function ShieldLogo() {
@@ -22,22 +23,50 @@ function Login() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+
+    const errors = {};
+    const emailErr = validateEmail(formData.email);
+    if (emailErr) errors.email = emailErr;
+
+    if (!formData.password) {
+      errors.password = "Vui lòng nhập mật khẩu.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const formData = new FormData(event.currentTarget);
       const authData = await loginUser({
-        email: String(formData.get("email") || "").trim(),
-        password: String(formData.get("password") || ""),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
       });
 
       login(authData);
       navigate(authData.user?.is_admin || authData.user?.isAdmin ? "/admin" : "/dashboard");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Email hoặc mật khẩu không chính xác.");
     } finally {
       setIsSubmitting(false);
     }
@@ -74,38 +103,72 @@ function Login() {
       </section>
 
       <section className="auth-form-side">
-        <form className="auth-card" onSubmit={handleSubmit}>
+        <form className="auth-card" onSubmit={handleSubmit} noValidate>
           <div className="auth-heading">
             <h1>Đăng nhập</h1>
-            <p>Vui lòng nhập thông tin để tiếp tục.</p>
+            <p>Vui lòng nhập email và mật khẩu để tiếp tục.</p>
           </div>
 
-          <label className="auth-field">
-            <span>EMAIL</span>
-            <div className="auth-input-wrap">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 6h16v12H4z" />
-                <path d="m4 7 8 6 8-6" />
-              </svg>
-              <input name="email" type="email" placeholder="Nhập địa chỉ email" required />
-            </div>
-          </label>
+          <div className="auth-field-group">
+            <label className={`auth-field ${fieldErrors.email ? "has-error" : ""}`}>
+              <span>EMAIL (@gmail.com)</span>
+              <div className="auth-input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6h16v12H4z" />
+                  <path d="m4 7 8 6 8-6" />
+                </svg>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="VD: user@gmail.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </label>
+            {fieldErrors.email && <span className="auth-field-error">{fieldErrors.email}</span>}
+          </div>
 
-          <label className="auth-field">
-            <span>MẬT KHẨU</span>
-            <div className="auth-input-wrap">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="5" y="10" width="14" height="10" rx="2" />
-                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                <path d="M12 14v2" />
-              </svg>
-              <input name="password" type="password" placeholder="Nhập mật khẩu" required />
-              <svg className="auth-input-action" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </div>
-          </label>
+          <div className="auth-field-group">
+            <label className={`auth-field ${fieldErrors.password ? "has-error" : ""}`}>
+              <span>MẬT KHẨU</span>
+              <div className="auth-input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="5" y="10" width="14" height="10" rx="2" />
+                  <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                  <path d="M12 14v2" />
+                </svg>
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Nhập mật khẩu của bạn"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="auth-input-action-btn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </label>
+            {fieldErrors.password && <span className="auth-field-error">{fieldErrors.password}</span>}
+          </div>
 
           {error && <p className="auth-error">{error}</p>}
 
@@ -120,7 +183,7 @@ function Login() {
 
           <div className="auth-links">
             <p>
-              Chưa có tài khoản? <Link to="/register">Đăng ký</Link>
+              Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
             </p>
             <Link className="auth-back-link" to="/">
               <span aria-hidden="true">←</span>

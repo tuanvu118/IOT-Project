@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { addUserDevice } from "../../../services/deviceService";
+import { validateDeviceCode, validateSecretCode } from "../../../utils/validators";
 
 function AddDevice() {
   const navigate = useNavigate();
@@ -8,9 +9,11 @@ function AddDevice() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showSecret, setShowSecret] = useState(false);
 
   const [formData, setFormData] = useState({
     verification_code: "",
+    secret_code: "",
     name: "",
     brand: "",
     model: "",
@@ -30,8 +33,16 @@ function AddDevice() {
     e.preventDefault();
 
     const code = formData.verification_code.trim().toUpperCase();
-    if (!code) {
-      setError("Vui lòng nhập mã thiết bị IoT (in trên thân thiết bị).");
+    const codeErr = validateDeviceCode(code);
+    if (codeErr) {
+      setError(codeErr);
+      return;
+    }
+
+    const secret = formData.secret_code.trim();
+    const secretErr = validateSecretCode(secret);
+    if (secretErr) {
+      setError(secretErr);
       return;
     }
 
@@ -40,9 +51,10 @@ function AddDevice() {
     setSuccess("");
 
     try {
-      // Gọi API kiểm tra mã thiết bị trong CSDL và liên kết vào tài khoản
+      // Gọi API kiểm tra mã thiết bị và mã xác nhận bí mật trong CSDL để gán quyền sở hữu
       const addedDevice = await addUserDevice({
         verification_code: code,
+        secret_code: secret,
         name: formData.name.trim() || null,
         brand: formData.brand.trim() || null,
         model: formData.model.trim() || null,
@@ -50,7 +62,7 @@ function AddDevice() {
         license_plate: formData.license_plate.trim() || null,
       });
 
-      // Đồng bộ vào localStorage custom_linked_devices nếu cần
+      // Đồng bộ vào localStorage custom_linked_devices
       try {
         const localLinked = JSON.parse(localStorage.getItem("custom_linked_devices") || "[]");
         const filtered = localLinked.filter(
@@ -62,17 +74,16 @@ function AddDevice() {
       }
 
       setSuccess(
-        `Kích hoạt và thêm thiết bị "${addedDevice?.name || code}" (${code}) thành công!`
+        `Kích hoạt và thêm thiết bị "${addedDevice?.name || code}" (${code}) vào tài khoản thành công!`
       );
 
       setTimeout(() => {
         navigate("/devices");
       }, 1200);
     } catch (err) {
-      // Backend sẽ trả về lỗi nếu mã không tồn tại trong DB hoặc đã bị kích hoạt bởi tài khoản khác
       setError(
         err?.message ||
-          "Không thể thêm thiết bị. Vui lòng kiểm tra lại mã in trên thiết bị hoặc liên hệ quản trị viên."
+          "Không thể thêm thiết bị. Vui lòng kiểm tra lại mã thiết bị và mã xác nhận bí mật."
       );
     } finally {
       setSubmitting(false);
@@ -112,7 +123,7 @@ function AddDevice() {
           <div>
             <h1>Thêm thiết bị IoT vào tài khoản</h1>
             <p className="add-device-subtitle">
-              Nhập mã định danh được in trên thân thiết bị IoT bạn đã mua từ hệ thống để kích hoạt và giám sát.
+              Nhập mã định danh và mã xác nhận bảo mật được in trên thân thiết bị IoT để kích hoạt sở hữu vào tài khoản của bạn.
             </p>
           </div>
         </div>
@@ -136,26 +147,76 @@ function AddDevice() {
             Xác thực thiết bị IoT
           </h2>
 
-          <div className="add-device-field add-device-field-full">
-            <label htmlFor="verificationCode">
-              Mã thiết bị (In trên thân thiết bị) <span className="required-mark">*</span>
-            </label>
-            <input
-              type="text"
-              id="verificationCode"
-              name="verification_code"
-              placeholder="VD: IOT-A1B2C3D4 hoặc SR-IOT-2023X"
-              value={formData.verification_code}
-              onChange={handleChange}
-              style={{ fontFamily: "monospace", letterSpacing: "1px", textTransform: "uppercase" }}
-              required
-            />
-            <span className="add-device-helper">
-              Mã được quản trị viên/nhà cung cấp in trực tiếp trên tem hoặc vỏ thiết bị. Hệ thống sẽ đối chiếu mã này với cơ sở dữ liệu.
-            </span>
+          <div className="add-device-grid">
+            <div className="add-device-field">
+              <label htmlFor="verificationCode">
+                Mã thiết bị (In trên vỏ/tem) <span className="required-mark">*</span>
+              </label>
+              <input
+                type="text"
+                id="verificationCode"
+                name="verification_code"
+                placeholder="VD: IOT-001, IOT-002..."
+                value={formData.verification_code}
+                onChange={handleChange}
+                style={{ fontFamily: "monospace", letterSpacing: "1px", textTransform: "uppercase" }}
+                required
+              />
+              <span className="add-device-helper">
+                Mã định danh thiết bị (Device Code / S/N).
+              </span>
+            </div>
+
+            <div className="add-device-field">
+              <label htmlFor="secretCode">
+                Mã xác nhận bảo mật (Secret PIN) <span className="required-mark">*</span>
+              </label>
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  type={showSecret ? "text" : "password"}
+                  id="secretCode"
+                  name="secret_code"
+                  placeholder="VD: 123456"
+                  value={formData.secret_code}
+                  onChange={handleChange}
+                  style={{ width: "100%", paddingRight: "40px", fontFamily: "monospace" }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSecret((p) => !p)}
+                  title={showSecret ? "Ẩn mã xác nhận" : "Hiện mã xác nhận"}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#94a3b8",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  {showSecret ? (
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <span className="add-device-helper">
+                Mã xác nhận bảo mật gồm 6 chữ số in trên thẻ bảo hành/tem cào.
+              </span>
+            </div>
           </div>
 
-          <div className="add-device-field add-device-field-full" style={{ marginTop: "14px" }}>
+          <div className="add-device-field add-device-field-full" style={{ marginTop: "16px" }}>
             <label htmlFor="deviceName">
               Tên gọi thiết bị <span className="optional-badge">Tùy chọn</span>
             </label>
@@ -163,12 +224,12 @@ function AddDevice() {
               type="text"
               id="deviceName"
               name="name"
-              placeholder="VD: Thiết bị giám sát xe SH 150i"
+              placeholder="VD: Thiết bị giám sát SH 150i"
               value={formData.name}
               onChange={handleChange}
             />
             <span className="add-device-helper">
-              Đặt tên dễ nhớ cho thiết bị của bạn. Nếu để trống, hệ thống sẽ sử dụng tên mặc định của thiết bị.
+              Đặt tên dễ nhớ để bạn dễ dàng quản lý trong danh sách thiết bị.
             </span>
           </div>
         </section>

@@ -1,8 +1,13 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.firebase import initialize_firebase
-from app.core.exceptions import http_exception_handler, generic_exception_handler
+from app.core.exceptions import (
+    http_exception_handler,
+    validation_exception_handler,
+    generic_exception_handler,
+)
 
 # ─── Controllers ──────────────────────────────────────────────────────────────
 from app.controller.auth_controller import router as auth_router
@@ -38,6 +43,7 @@ app.add_middleware(
 
 # ─── Exception Handlers ───────────────────────────────────────────────────────
 app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 # ─── Routers ──────────────────────────────────────────────────────────────────

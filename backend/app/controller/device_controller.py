@@ -103,7 +103,7 @@ def user_create_device_alias(
     "/my-devices",
     response_model=List[DeviceResponse],
     summary="Lấy danh sách Device của tôi",
-    description="Trả về các thiết bị đang liên kết với tài khoản hiện tại (userId == uid).",
+    description="Trả về các thiết bị đang thuộc quyền sở hữu của tài khoản hiện tại (userId == uid).",
 )
 def get_my_devices(current_user: UserEntity = Depends(get_current_user)):
     service = DeviceService()
@@ -113,10 +113,10 @@ def get_my_devices(current_user: UserEntity = Depends(get_current_user)):
 @router.get(
     "/available",
     response_model=List[DeviceResponse],
-    summary="Lấy danh sách thiết bị chưa liên kết",
-    description="Trả về các thiết bị IoT chưa thuộc về user nào (userId == None) để người dùng có thể chọn liên kết.",
+    summary="Lấy danh sách thiết bị chưa liên kết (Admin)",
+    description="Trả về các thiết bị IoT chưa thuộc về user nào trong kho (chỉ dành cho Quản trị viên).",
 )
-def get_available_devices(current_user: UserEntity = Depends(get_current_user)):
+def get_available_devices(current_user: UserEntity = Depends(require_admin)):
     service = DeviceService()
     return [_to_response(d) for d in service.get_unlinked_devices()]
 
@@ -131,7 +131,12 @@ def get_device(
     current_user: UserEntity = Depends(get_current_user),
 ):
     service = DeviceService()
-    return _to_response(service.get_by_id(device_id))
+    return _to_response(
+        service.get_by_id(
+            device_id=device_id,
+            user_id=None if current_user.is_admin else current_user.id,
+        )
+    )
 
 
 # ─── Link / Unlink ─────────────────────────────────────────────────────────────
@@ -140,15 +145,25 @@ def get_device(
     "/link",
     response_model=DeviceResponse,
     status_code=status.HTTP_200_OK,
-    summary="Liên kết Device với tài khoản",
-    description="Liên kết thiết bị IoT với tài khoản User bằng verificationCode. Device phải chưa được ai sở hữu.",
+    summary="Liên kết Device với phương tiện",
+    description="Liên kết thiết bị IoT thuộc sở hữu của User với một phương tiện.",
 )
 def link_device(
     payload: LinkDeviceRequest,
     current_user: UserEntity = Depends(get_current_user),
 ):
     service = DeviceService()
-    return _to_response(service.link_device(current_user.id, payload.verification_code))
+    target_id = payload.device_id or payload.verification_code
+    return _to_response(
+        service.link_device_to_vehicle(
+            user_id=current_user.id,
+            device_id_or_code=target_id,
+            brand=payload.brand,
+            model=payload.model,
+            license_plate=payload.license_plate,
+            color=payload.color,
+        )
+    )
 
 
 @router.post(
@@ -156,7 +171,7 @@ def link_device(
     response_model=DeviceResponse,
     status_code=status.HTTP_200_OK,
     summary="Huỷ liên kết Device",
-    description="Huỷ liên kết thiết bị khỏi tài khoản hiện tại. Chỉ owner mới được thực hiện.",
+    description="Huỷ liên kết phương tiện khỏi thiết bị hoặc gỡ thiết bị. Chỉ owner mới được thực hiện.",
 )
 def unlink_device(
     payload: UnlinkDeviceRequest,

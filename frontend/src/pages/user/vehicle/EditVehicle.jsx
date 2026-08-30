@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getDeviceById, updateVehicle, unlinkDevice } from "../../../services/deviceService";
+import { validateLicensePlate } from "../../../utils/validators";
 
 function getDeviceOnline(device) {
   if (!device?.name || device?.status === "unlinked") return false;
@@ -98,8 +99,14 @@ function EditVehicle() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.brand.trim() || !formData.model.trim() || !formData.license_plate.trim()) {
-      setError("Vui lòng điền đầy đủ các trường bắt buộc (*).");
+    if (!formData.brand.trim() || !formData.model.trim()) {
+      setError("Vui lòng nhập Thương hiệu và Model xe.");
+      return;
+    }
+
+    const plateErr = validateLicensePlate(formData.license_plate);
+    if (plateErr) {
+      setError(plateErr);
       return;
     }
 

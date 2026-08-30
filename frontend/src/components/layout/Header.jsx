@@ -79,7 +79,7 @@ function Header() {
     user?.avatarUrl ||
     user?.avatar_url ||
     localStorage.getItem("user_custom_avatar") ||
-    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=96&q=80";
+    "";
 
   useEffect(() => {
     let isMounted = true;
@@ -233,7 +233,13 @@ function Header() {
         </div>
 
         <strong>{displayName}</strong>
-        <img className="user-avatar" src={avatarUrl} alt="Ảnh đại diện" />
+        {avatarUrl ? (
+          <img className="user-avatar" src={avatarUrl} alt={displayName} />
+        ) : (
+          <div className="user-avatar user-avatar-placeholder">
+            <span>{displayName.charAt(0).toUpperCase()}</span>
+          </div>
+        )}
       </div>
 
       {isOpen && <span className="notification-page-dim" aria-hidden="true" />}

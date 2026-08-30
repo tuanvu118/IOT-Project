@@ -30,10 +30,11 @@ export function getDeviceById(deviceId) {
   return apiRequest(`/devices/${deviceId}`);
 }
 
-export function linkDevice(verificationCode) {
+export function linkDevice(payload) {
+  const body = typeof payload === "string" ? { device_id: payload } : payload;
   return apiRequest("/devices/link", {
     method: "POST",
-    body: JSON.stringify({ verification_code: verificationCode }),
+    body: JSON.stringify(body),
   });
 }
 

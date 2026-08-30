@@ -67,6 +67,11 @@ export function AuthProvider({ children }) {
     setStoredToken(null);
     setToken(null);
     setUser(null);
+    try {
+      localStorage.removeItem("user_custom_avatar");
+    } catch {
+      // ignore
+    }
   };
 
   const updateUser = (nextUser) => {

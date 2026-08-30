@@ -256,6 +256,7 @@
 }
 
 .auth-input-wrap {
+  position: relative;
   height: 47px;
   display: flex;
   align-items: center;
@@ -518,6 +519,76 @@
 
 .auth-register-links {
   margin-top: 34px;
+}
+
+/* ─── Validation & Field Helpers ────────────────────────────────────────── */
+
+.auth-field-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-register-form .auth-field-group .auth-field {
+  margin-bottom: 4px;
+}
+
+.req-star {
+  color: #ef4444;
+  font-weight: 800;
+  margin-left: 2px;
+}
+
+.auth-field.has-error .auth-input-wrap {
+  border-color: #ef4444 !important;
+  background: #fffafa !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.auth-field-error {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+  padding-left: 2px;
+  line-height: 1.35;
+  animation: errorFadeIn 0.2s ease-out;
+}
+
+@keyframes errorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-input-action-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  margin-left: auto;
+  cursor: pointer;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transition: color 0.15s;
+}
+
+.auth-input-action-btn:hover {
+  color: #334155;
+}
+
+.auth-input-action-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 960px) {
