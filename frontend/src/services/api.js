@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 export function getStoredToken() {
   return localStorage.getItem("access_token");
@@ -14,8 +14,11 @@ export function setStoredToken(token) {
 
 export async function apiRequest(path, options = {}) {
   const token = options.token || getStoredToken();
+
   const headers = {
-    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+    ...(options.body instanceof FormData
+      ? {}
+      : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -26,10 +29,16 @@ export async function apiRequest(path, options = {}) {
   });
 
   const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await response.json() : null;
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : null;
 
   if (!response.ok) {
-    throw new Error(data?.detail || data?.message || "Không thể kết nối tới máy chủ.");
+    throw new Error(
+      data?.detail ||
+        data?.message ||
+        "Không thể kết nối tới máy chủ."
+    );
   }
 
   return data;

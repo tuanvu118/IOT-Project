@@ -153,6 +153,7 @@
   display: flex;
   align-items: center;
   gap: 23px;
+  margin-left: auto;
 }
 
 .notification-wrap {
@@ -6033,5 +6034,715 @@
   .dashboard-map,
   .tracking-map {
     height: 300px;
+  }
+}
+
+/* =========================================================
+   TRACKING - FIGMA DESKTOP OVERRIDE
+   ========================================================= */
+
+@media (min-width: 1121px) {
+  .user-shell {
+    grid-template-columns: 176px minmax(0, 1fr);
+  }
+
+  .user-sidebar {
+    padding: 14px 12px 18px;
+  }
+
+  .user-sidebar-logo {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .user-sidebar-logo svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .user-sidebar-brand strong {
+    font-size: 16px;
+  }
+
+  .user-sidebar-brand span {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .user-sidebar-nav {
+    gap: 7px;
+  }
+
+  .user-sidebar-link,
+  .user-sidebar-logout {
+    height: 40px;
+    gap: 10px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .user-sidebar-link svg,
+  .user-sidebar-logout svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .user-sidebar-logout {
+    height: 54px;
+    padding-top: 14px;
+  }
+
+  .user-content {
+    padding: 36px 48px 32px;
+  }
+
+  /* Cho trang tracking sử dụng chiều rộng màn hình */
+  .tracking-page {
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  /* Header của trang */
+  .tracking-heading-row {
+    gap: 32px;
+    padding-bottom: 24px;
+    margin-bottom: 28px;
+  }
+
+  .tracking-heading-row h1 {
+    margin-bottom: 6px;
+    font-size: 30px;
+    line-height: 1.15;
+  }
+
+  .tracking-heading-row p {
+    font-size: 14px;
+  }
+
+  /* Select + button */
+  .tracking-actions {
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .tracking-actions select {
+    width: 270px;
+    height: 44px;
+  }
+
+  .tracking-actions button {
+    height: 44px;
+    padding: 0 20px;
+    border-radius: 7px;
+    font-weight: 700;
+  }
+
+  /* Map lớn bên trái, panel nhỏ bên phải */
+  .tracking-grid {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .tracking-map-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tracking-map {
+    width: 100%;
+    height: 650px;
+  }
+
+  /* Leaflet phải phủ kín vùng map */
+  .tracking-map .leaflet-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Panel phải */
+  .tracking-side {
+    gap: 18px;
+  }
+
+  .tracking-vehicle-card {
+    padding: 22px 20px;
+  }
+
+  .tracking-vehicle-title h2 {
+    font-size: 23px;
+    line-height: 1.15;
+  }
+
+  .tracking-vehicle-title span {
+    padding: 7px 11px;
+    font-size: 11px;
+  }
+
+  .tracking-info-row {
+    margin-top: 18px;
+  }
+
+  .tracking-mini-grid {
+    gap: 14px;
+  }
+
+  .tracking-mini-grid section {
+    min-height: 110px;
+    padding: 15px 10px;
+  }
+
+  .tracking-update-card {
+    min-height: 70px;
+  }
+
+  /* ===== FIGMA DESKTOP HEADER ===== */
+
+  .user-header {
+    min-height: 60px;
+    height: 60px;
+    padding: 0 28px;
+  }
+
+  .user-header-search {
+    width: 260px;
+    height: 40px;
+  }
+
+  .user-header-search input {
+    font-size: 13px;
+  }
+
+  .user-header-search svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .user-header-actions {
+    gap: 18px;
+  }
+
+  .user-header-notification {
+    width: 36px;
+    height: 36px;
+  }
+
+  .user-header-notification svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .user-header-user {
+    gap: 9px;
+  }
+
+  .user-header-user strong {
+    font-size: 13px;
+  }
+
+  .user-header-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Giảm khoảng trống giữa header và nội dung */
+  .user-content {
+    padding-top: 30px;
+  }
+}
+
+/* =========================================================
+   MOBILE BOTTOM NAV
+   ========================================================= */
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* =========================================================
+   TRACKING - FIGMA MOBILE
+   ========================================================= */
+.tracking-refresh-mobile {
+  display: none;
+}
+
+@media (max-width: 780px) {
+  /*
+   * Mobile sử dụng bottom navigation.
+   * Không sử dụng sidebar desktop.
+   */
+  .user-sidebar {
+    display: none;
+  }
+
+  .user-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .user-main-shell {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /*
+   * Header desktop quá lớn đối với PWA.
+   * Giữ header gọn phía trên.
+   */
+  .user-header {
+    min-height: 48px;
+    height: 48px;
+    padding: 0 16px;
+  }
+
+  .user-header-search {
+    display: none;
+  }
+
+  .user-header-user strong {
+    display: none;
+  }
+
+  .user-header-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  /*
+   * Nội dung chừa khoảng dưới cho bottom navigation.
+   */
+  .user-content {
+    width: 100%;
+    padding: 0 12px 90px;
+  }
+
+  /* ---------- Tracking page ---------- */
+
+  .tracking-page {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding-top: 12px;
+  }
+
+  /*
+   * Header của Tracking
+   */
+  .tracking-heading-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .tracking-heading-row > div:first-child {
+    width: 100%;
+  }
+
+  .tracking-heading-row h1 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  /*
+   * Figma mobile không cần subtitle dài.
+   */
+  .tracking-heading-row p {
+    display: none;
+  }
+
+  /*
+   * Select phương tiện
+   */
+  .tracking-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0;
+  }
+
+  .tracking-actions select {
+    order: 1;
+    width: 100%;
+    height: 44px;
+    padding: 0 38px 0 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    background-color: #fff;
+  }
+
+  .tracking-actions button.tracking-refresh-desktop {
+    display: none;
+  }
+
+  .tracking-refresh-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 44px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 22px;
+    background: #0b63ce;
+    color: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tracking-refresh-mobile svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tracking-refresh-mobile:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  /*
+   * Grid desktop -> một cột.
+   */
+  .tracking-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .tracking-map-card {
+    width: 100%;
+    margin-top: 0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  /*
+   * Mobile Figma cần map khá lớn.
+   */
+  .tracking-map {
+    width: 100%;
+    height: 320px;
+    border-radius: 10px;
+  }
+
+  .tracking-map .leaflet-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  /*
+   * Không cần badge kết nối đè trên map ở mobile.
+   * Thông tin này đã có trong card phía dưới.
+   */
+  .tracking-map-status {
+    display: none;
+  }
+
+  .tracking-side {
+    width: 100%;
+    margin-top: 0;
+    gap: 8px;
+  }
+
+  /* ---------- Vehicle Card ---------- */
+
+  .tracking-vehicle-card {
+    width: 100%;
+    min-height: 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+
+  .tracking-vehicle-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .tracking-vehicle-title h2 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .tracking-vehicle-title span {
+    padding: 5px 8px;
+    font-size: 10px;
+    line-height: 1.1;
+  }
+
+  .tracking-vehicle-card > strong {
+    display: inline-block;
+    margin: 0 0 10px;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .tracking-info-row {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .tracking-info-row > span {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .tracking-info-row small {
+    margin-bottom: 4px;
+    font-size: 9px;
+    letter-spacing: 0.4px;
+  }
+
+  .tracking-info-row p {
+    margin-top: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  /*
+   * GPS + Device đặt cạnh nhau như Figma.
+   */
+  .tracking-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tracking-mini-grid section {
+    min-width: 0;
+    min-height: 0;
+    padding: 10px 8px;
+    border-radius: 10px;
+  }
+
+  .tracking-mini-grid section svg {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 8px;
+  }
+
+  .tracking-mini-grid small {
+    font-size: 9px;
+    margin-bottom: 4px;
+  }
+
+  .tracking-mini-grid strong {
+    font-size: 11px;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  /* ---------- Last Updated ---------- */
+
+  .tracking-update-card {
+    width: 100%;
+    min-height: 56px;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .tracking-update-card > svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tracking-update-card small {
+    font-size: 9px;
+  }
+
+  .tracking-update-card strong {
+    font-size: 11px;
+  }
+
+  .tracking-update-card button {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* ---------- Bottom navigation ---------- */
+
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+
+    height: 66px;
+    padding: 5px 5px max(5px, env(safe-area-inset-bottom));
+
+    background: #fff;
+    border-top: 1px solid #dce2ec;
+    box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.06);
+  }
+
+  .mobile-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 0;
+    gap: 3px;
+
+    color: #596579;
+    text-decoration: none;
+    font-size: 9px;
+    font-weight: 500;
+
+    border-radius: 9px;
+  }
+
+  .mobile-bottom-nav-item svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: #0969da;
+    font-weight: 700;
+  }
+
+  .mobile-bottom-nav-item.active svg {
+    width: 21px;
+    height: 21px;
+  }
+}
+
+/* =========================================================
+   MOBILE APP LAYOUT
+   ========================================================= */
+
+/* Desktop: không hiện bottom navigation */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 780px) {
+
+  /* Ẩn sidebar desktop */
+  .user-sidebar {
+    display: none;
+  }
+
+  /* Mobile chỉ còn phần nội dung */
+  .user-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .user-main-shell {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Chừa khoảng dưới để nội dung không bị bottom nav che */
+  .user-content {
+    padding-bottom: 82px;
+  }
+
+  /* Thanh menu cố định dưới màn hình */
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+
+    height: 64px;
+    padding: 4px 6px max(4px, env(safe-area-inset-bottom));
+
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+  }
+
+  /* Từng nút menu */
+  .mobile-bottom-nav-item {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+
+    border-radius: 10px;
+
+    color: #64748b;
+    text-decoration: none;
+
+    font-size: 10px;
+    line-height: 1.1;
+    font-weight: 500;
+  }
+
+  /* QUAN TRỌNG: khóa kích thước SVG */
+  .mobile-bottom-nav-item svg {
+    display: block;
+
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .mobile-bottom-nav-item span {
+    display: block;
+    max-width: 100%;
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* Trang đang được chọn */
+  .mobile-bottom-nav-item.active {
+    color: #0b63ce;
+    background: #eaf3ff;
+    font-weight: 600;
   }
 }

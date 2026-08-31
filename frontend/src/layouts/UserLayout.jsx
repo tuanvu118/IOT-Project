@@ -3,6 +3,8 @@ import { Outlet } from "react-router-dom";
 import Header from "../components/layout/Header";
 import AlertPopup from "../components/layout/AlertPopup";
 import UserSidebar from "../components/layout/UserSidebar";
+import MobileBottomNav from "../components/layout/MobileBottomNav";
+
 import "../styles/user-dashboard.css";
 
 function UserLayout() {
@@ -19,6 +21,7 @@ function UserLayout() {
       </div>
 
       <AlertPopup />
+      <MobileBottomNav />
     </div>
   );
 }
