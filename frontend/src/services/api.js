@@ -25,11 +25,22 @@ export async function apiRequest(path, options = {}) {
     headers,
   });
 
-  const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await response.json() : null;
+  if (response.status === 204 || response.status === 205) {
+    return null;
+  }
+
+  let data = null;
+  const text = await response.text();
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(data?.detail || data?.message || "Không thể kết nối tới máy chủ.");
+    throw new Error(data?.detail || data?.message || (typeof data === "string" ? data : "Không thể kết nối tới máy chủ."));
   }
 
   return data;

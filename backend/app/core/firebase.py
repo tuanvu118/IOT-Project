@@ -11,7 +11,21 @@ def initialize_firebase() -> None:
     if _app is not None:
         return
 
-    cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+    import os
+    cred_path = settings.FIREBASE_CREDENTIALS_PATH
+    if not os.path.exists(cred_path):
+        # Fallback to local paths
+        candidates = [
+            os.path.join(os.path.dirname(__file__), "..", "..", "firebase-credentials.json"),
+            os.path.join(os.getcwd(), "firebase-credentials.json"),
+            os.path.join(os.getcwd(), "backend", "firebase-credentials.json"),
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                cred_path = os.path.abspath(c)
+                break
+
+    cred = credentials.Certificate(cred_path)
     _app = firebase_admin.initialize_app(cred, {
         "projectId": settings.FIREBASE_PROJECT_ID,
     })

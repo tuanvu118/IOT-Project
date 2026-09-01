@@ -59,6 +59,9 @@ import AdminDeviceDetail from "../pages/admin/devices/DeviceDetail";
 import AdminAddDevice from "../pages/admin/devices/AddDevice";
 import EditDevice from "../pages/admin/devices/EditDevice";
 
+// Settings
+import AdminSettings from "../pages/admin/settings/AdminSettings";
+
 // 404
 import NotFound from "../pages/NotFound";
 
@@ -131,7 +134,11 @@ function AppRoutes() {
         <Route path="devices" element={<AdminDeviceList />} />
         <Route path="devices/add" element={<AdminAddDevice />} />
         <Route path="devices/:id" element={<AdminDeviceDetail />} />
+        <Route path="devices/:id/sensors" element={<SensorData />} />
         <Route path="devices/:id/edit" element={<EditDevice />} />
+
+        {/* System Settings */}
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       {/* ================= 404 ================= */}

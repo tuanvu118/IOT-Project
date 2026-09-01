@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMyDevices, unlinkDevice, updateDeviceStatus } from "../../../services/deviceService";
+import { getMyDevices, removeDevice, updateDeviceStatus } from "../../../services/deviceService";
 
 function formatLastUpdated(device) {
   const loc = device?.locations?.[0];
@@ -89,14 +89,14 @@ function Devices() {
     }
 
     try {
-      // 1. Unlink via API
+      // 1. Remove device ownership via API
       try {
         const targetId = device.id || device.verification_code || code;
         if (targetId) {
-          await unlinkDevice(targetId);
+          await removeDevice(targetId);
         }
       } catch (apiErr) {
-        console.warn("Unlink API warning:", apiErr);
+        console.warn("Remove device API warning:", apiErr);
       }
 
       // 2. Remove from custom_linked_devices

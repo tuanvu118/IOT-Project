@@ -81,15 +81,16 @@ function Vehicles() {
     };
   }, [user]);
 
-  // Devices that have vehicle info attached
-  const vehicleDevices = devices.filter(
-    (d) =>
-      d.vehicle &&
-      (d.vehicle.brand || d.vehicle.model || d.vehicle.license_plate),
-  );
+  // Only items that represent an actual vehicle (linked or unlinked vehicle)
+  const displayDevices = devices.filter((d) => {
+    const v = d.vehicle || {};
+    const hasVehInfo = Boolean(
+      v.brand || v.model || v.license_plate || v.licensePlate || d.brand || d.license_plate || d.licensePlate
+    );
+    const isCustomVehicle = String(d.id || "").startsWith("veh-");
+    return hasVehInfo || isCustomVehicle;
+  });
 
-  // Show all devices if no vehicles, otherwise show vehicle devices
-  const displayDevices = vehicleDevices.length > 0 ? vehicleDevices : devices;
 
   return (
     <div className="vehicles-page">

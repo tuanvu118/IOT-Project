@@ -45,6 +45,14 @@ export function unlinkDevice(deviceId) {
   });
 }
 
+export function removeDevice(deviceId) {
+  return apiRequest("/devices/remove", {
+    method: "POST",
+    body: JSON.stringify({ device_id: deviceId }),
+  });
+}
+
+
 export function updateDeviceConfig(deviceId, config) {
   return apiRequest(`/devices/${deviceId}/config`, {
     method: "PATCH",
@@ -65,3 +73,22 @@ export function updateVehicle(deviceId, vehicleData) {
     body: JSON.stringify(vehicleData),
   });
 }
+
+export function getAllDevicesAdmin() {
+  return apiRequest("/devices");
+}
+
+export function deleteDeviceAdmin(deviceId) {
+  return apiRequest(`/devices/${deviceId}`, {
+    method: "DELETE",
+  });
+}
+
+export function updateDeviceBasic(deviceId, data) {
+  return apiRequest(`/devices/${deviceId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+

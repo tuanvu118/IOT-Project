@@ -216,12 +216,21 @@ function LinkDevice() {
 
   return (
     <div className="link-device-page">
-      {/* Breadcrumb */}
-      <nav className="add-device-breadcrumb" aria-label="Breadcrumb">
-        <Link to="/devices">Thiết bị</Link>
-        <span className="breadcrumb-separator">&gt;</span>
-        <strong>Liên kết thiết bị IoT</strong>
-      </nav>
+      {/* Breadcrumb & Top Action */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+        <nav className="add-device-breadcrumb" aria-label="Breadcrumb" style={{ margin: 0 }}>
+          <Link to="/devices">Thiết bị</Link>
+          <span className="breadcrumb-separator">&gt;</span>
+          <strong>Liên kết thiết bị IoT</strong>
+        </nav>
+        <Link to="/devices" className="app-back-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Quay lại danh sách
+        </Link>
+      </div>
 
       {/* Top Center Icon & Header */}
       <div className="link-device-header-top">

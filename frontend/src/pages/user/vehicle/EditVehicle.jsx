@@ -259,7 +259,13 @@ function EditVehicle() {
       localStorage.setItem("custom_vehicles", JSON.stringify(updatedCustom));
 
       const customLinked = JSON.parse(localStorage.getItem("custom_linked_devices") || "[]");
-      const updatedLinked = customLinked.filter((d) => d.id !== id);
+      const devCode = device?.verification_code || device?.name || id;
+      const updatedLinked = customLinked.map((d) => {
+        if (d.id === id || d.verification_code === devCode) {
+          return { ...d, vehicle: null };
+        }
+        return d;
+      });
       localStorage.setItem("custom_linked_devices", JSON.stringify(updatedLinked));
 
       navigate("/vehicles");
@@ -276,8 +282,27 @@ function EditVehicle() {
 
   return (
     <div className="edit-vehicle-page">
-      <div className="edit-vehicle-header">
-        <h1>Chỉnh sửa phương tiện</h1>
+      {/* Breadcrumbs */}
+      <nav className="add-vehicle-breadcrumb" aria-label="Breadcrumb" style={{ marginBottom: "16px" }}>
+        <Link to="/vehicles">Phương tiện</Link>
+        <span className="breadcrumb-separator">&gt;</span>
+        <strong>Chỉnh sửa phương tiện</strong>
+      </nav>
+
+      <div className="edit-vehicle-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "20px" }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Chỉnh sửa phương tiện</h1>
+          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "14px" }}>
+            Cập nhật thông tin chi tiết của phương tiện và quản lý liên kết thiết bị IoT.
+          </p>
+        </div>
+        <Link to="/vehicles" className="app-back-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Quay lại danh sách
+        </Link>
       </div>
 
       {error && <div className="edit-vehicle-alert error">{error}</div>}

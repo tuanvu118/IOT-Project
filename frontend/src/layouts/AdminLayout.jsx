@@ -1,17 +1,17 @@
 import { Outlet } from "react-router-dom";
-
 import Header from "../components/layout/Header";
 import AdminSidebar from "../components/layout/AdminSidebar";
+import "../styles/user-dashboard.css";
 
 function AdminLayout() {
   return (
-    <div>
+    <div className="user-shell admin-shell">
       <AdminSidebar />
 
-      <div>
+      <div className="user-main-shell">
         <Header />
 
-        <main>
+        <main className="user-content admin-content">
           <Outlet />
         </main>
       </div>

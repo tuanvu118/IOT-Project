@@ -13,12 +13,8 @@ function AddDevice() {
 
   const [formData, setFormData] = useState({
     verification_code: "",
-    secret_code: "",
     name: "",
-    brand: "",
-    model: "",
-    color: "",
-    license_plate: "",
+    secret_code: "",
   });
 
   const handleChange = (e) => {
@@ -46,44 +42,42 @@ function AddDevice() {
       return;
     }
 
+    if (!formData.name.trim()) {
+      setError("Vui lòng nhập tên thiết bị.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
     setSuccess("");
 
     try {
-      // Gọi API kiểm tra mã thiết bị và mã xác nhận bí mật trong CSDL để gán quyền sở hữu
       const addedDevice = await addUserDevice({
         verification_code: code,
         secret_code: secret,
-        name: formData.name.trim() || null,
-        brand: formData.brand.trim() || null,
-        model: formData.model.trim() || null,
-        color: formData.color.trim() || null,
-        license_plate: formData.license_plate.trim() || null,
+        name: formData.name.trim(),
       });
 
-      // Đồng bộ vào localStorage custom_linked_devices
+      // Synchronize into localStorage
       try {
         const localLinked = JSON.parse(localStorage.getItem("custom_linked_devices") || "[]");
         const filtered = localLinked.filter(
           (d) => (d.verification_code || d.id) !== (addedDevice.verification_code || addedDevice.id)
         );
         localStorage.setItem("custom_linked_devices", JSON.stringify([addedDevice, ...filtered]));
-      } catch {
-        // ignore
-      }
+      } catch {}
 
       setSuccess(
-        `Kích hoạt và thêm thiết bị "${addedDevice?.name || code}" (${code}) vào tài khoản thành công!`
+        `Thêm thiết bị "${formData.name.trim()}" (${code}) thành công!`
       );
 
       setTimeout(() => {
         navigate("/devices");
-      }, 1200);
+      }, 1000);
     } catch (err) {
       setError(
         err?.message ||
-          "Không thể thêm thiết bị. Vui lòng kiểm tra lại mã thiết bị và mã xác nhận bí mật."
+          "Không thể thêm thiết bị. Vui lòng kiểm tra lại mã thiết bị và mã xác minh PIN."
       );
     } finally {
       setSubmitting(false);
@@ -91,269 +85,247 @@ function AddDevice() {
   };
 
   return (
-    <div className="add-device-page">
-      {/* Breadcrumbs */}
-      <nav className="add-device-breadcrumb" aria-label="Breadcrumb">
-        <Link to="/devices">Thiết bị</Link>
-        <span className="breadcrumb-separator">&gt;</span>
-        <strong>Thêm thiết bị IoT</strong>
-      </nav>
+    <div className="add-device-page" style={{ maxWidth: "680px", margin: "0 auto", padding: "32px 16px" }}>
+      {error && <div className="devices-alert error" style={{ marginBottom: "16px" }}>{error}</div>}
+      {success && <div className="devices-alert success" style={{ marginBottom: "16px" }}>{success}</div>}
 
-      {error && <div className="add-device-alert error">{error}</div>}
-      {success && <div className="add-device-alert success">{success}</div>}
-
-      <form className="add-device-card" onSubmit={handleSubmit}>
-        <div className="add-device-header">
-          <div className="add-device-header-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="2" y="2" width="20" height="8" rx="2" />
-              <rect x="2" y="14" width="20" height="8" rx="2" />
-              <line x1="6" y1="6" x2="6.01" y2="6" />
-              <line x1="6" y1="18" x2="6.01" y2="18" />
-            </svg>
-          </div>
-          <div>
-            <h1>Thêm thiết bị IoT vào tài khoản</h1>
-            <p className="add-device-subtitle">
-              Nhập mã định danh và mã xác nhận bảo mật được in trên thân thiết bị IoT để kích hoạt sở hữu vào tài khoản của bạn.
-            </p>
-          </div>
+      <div className="admin-overview-kpi-card" style={{ padding: "28px 32px", borderRadius: "16px", border: "1px solid #e2e8f0", background: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
+        {/* Card Title */}
+        <div style={{ paddingBottom: "16px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px" }}>
+          <h2 style={{ fontSize: "19px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+            Thông tin thiết bị
+          </h2>
         </div>
 
-        <hr className="add-device-divider" />
-
-        {/* Section: Xác thực thiết bị */}
-        <section className="add-device-section">
-          <h2 className="add-device-section-title">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            Xác thực thiết bị IoT
-          </h2>
-
-          <div className="add-device-grid">
-            <div className="add-device-field">
-              <label htmlFor="verificationCode">
-                Mã thiết bị (In trên vỏ/tem) <span className="required-mark">*</span>
-              </label>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {/* Field 1: Mã thiết bị */}
+          <div className="custom-form-group">
+            <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "8px" }}>
+              Mã thiết bị <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <div className="custom-input-with-icon" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <span style={{ position: "absolute", left: "14px", color: "#64748b", display: "flex", alignItems: "center" }}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                </svg>
+              </span>
               <input
                 type="text"
-                id="verificationCode"
                 name="verification_code"
-                placeholder="VD: IOT-001, IOT-002..."
+                placeholder="VD: IOT-002"
                 value={formData.verification_code}
                 onChange={handleChange}
-                style={{ fontFamily: "monospace", letterSpacing: "1px", textTransform: "uppercase" }}
                 required
+                style={{
+                  width: "100%",
+                  height: "44px",
+                  paddingLeft: "42px",
+                  paddingRight: "14px",
+                  border: "1.5px solid #cbd5e1",
+                  borderRadius: "10px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#0f172a",
+                  outline: "none",
+                  transition: "border-color 0.15s",
+                }}
               />
-              <span className="add-device-helper">
-                Mã định danh thiết bị (Device Code / S/N).
-              </span>
             </div>
-
-            <div className="add-device-field">
-              <label htmlFor="secretCode">
-                Mã xác nhận bảo mật (Secret PIN) <span className="required-mark">*</span>
-              </label>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <input
-                  type={showSecret ? "text" : "password"}
-                  id="secretCode"
-                  name="secret_code"
-                  placeholder="VD: 123456"
-                  value={formData.secret_code}
-                  onChange={handleChange}
-                  style={{ width: "100%", paddingRight: "40px", fontFamily: "monospace" }}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowSecret((p) => !p)}
-                  title={showSecret ? "Ẩn mã xác nhận" : "Hiện mã xác nhận"}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#94a3b8",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  {showSecret ? (
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              <span className="add-device-helper">
-                Mã xác nhận bảo mật gồm 6 chữ số in trên thẻ bảo hành/tem cào.
-              </span>
-            </div>
-          </div>
-
-          <div className="add-device-field add-device-field-full" style={{ marginTop: "16px" }}>
-            <label htmlFor="deviceName">
-              Tên gọi thiết bị <span className="optional-badge">Tùy chọn</span>
-            </label>
-            <input
-              type="text"
-              id="deviceName"
-              name="name"
-              placeholder="VD: Thiết bị giám sát SH 150i"
-              value={formData.name}
-              onChange={handleChange}
-            />
-            <span className="add-device-helper">
-              Đặt tên dễ nhớ để bạn dễ dàng quản lý trong danh sách thiết bị.
+            <span style={{ display: "block", fontSize: "12px", color: "#64748b", marginTop: "6px" }}>
+              Mã định danh duy nhất in trên thân thiết bị.
             </span>
           </div>
-        </section>
 
-        {/* Section: Thông tin phương tiện (tùy chọn) */}
-        <section className="add-device-section">
-          <h2 className="add-device-section-title">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="18.5" cy="17.5" r="3.5" />
-              <circle cx="5.5" cy="17.5" r="3.5" />
-              <circle cx="15" cy="5" r="1" />
-              <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
-            </svg>
-            Thông tin phương tiện gắn kèm
-            <span className="optional-badge">Tùy chọn</span>
-          </h2>
-
-          <div className="add-device-grid">
-            <div className="add-device-field">
-              <label htmlFor="brand">Thương hiệu xe</label>
+          {/* Field 2: Tên thiết bị */}
+          <div className="custom-form-group">
+            <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "8px" }}>
+              Tên thiết bị <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <div className="custom-input-with-icon" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <span style={{ position: "absolute", left: "14px", color: "#64748b", display: "flex", alignItems: "center" }}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+              </span>
               <input
                 type="text"
-                id="brand"
-                name="brand"
-                placeholder="VD: Honda, Yamaha..."
-                value={formData.brand}
+                name="name"
+                placeholder="VD: Thiết bị IoT 002"
+                value={formData.name}
                 onChange={handleChange}
-              />
-            </div>
-
-            <div className="add-device-field">
-              <label htmlFor="model">Dòng xe (Model)</label>
-              <input
-                type="text"
-                id="model"
-                name="model"
-                placeholder="VD: SH 150i, Air Blade..."
-                value={formData.model}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="add-device-field">
-              <label htmlFor="color">Màu sắc</label>
-              <input
-                type="text"
-                id="color"
-                name="color"
-                placeholder="VD: Đen nhám, Trắng..."
-                value={formData.color}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="add-device-field">
-              <label htmlFor="license_plate">Biển số xe</label>
-              <input
-                type="text"
-                id="license_plate"
-                name="license_plate"
-                placeholder="VD: 29A1-123.45"
-                value={formData.license_plate}
-                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  height: "44px",
+                  paddingLeft: "42px",
+                  paddingRight: "14px",
+                  border: "1.5px solid #cbd5e1",
+                  borderRadius: "10px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#0f172a",
+                  outline: "none",
+                  transition: "border-color 0.15s",
+                }}
               />
             </div>
           </div>
 
-          <p className="add-device-info-note">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
+          {/* Field 3: Mã xác minh (PIN) */}
+          <div className="custom-form-group">
+            <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "8px" }}>
+              Mã xác minh (PIN) <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <div className="custom-input-with-icon" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <span style={{ position: "absolute", left: "14px", color: "#64748b", display: "flex", alignItems: "center" }}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="6" cy="12" r="1.5" fill="currentColor" />
+                  <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                  <circle cx="18" cy="12" r="1.5" fill="currentColor" />
+                </svg>
+              </span>
+              <input
+                type={showSecret ? "text" : "password"}
+                name="secret_code"
+                placeholder="Nhập mã PIN 6 số"
+                value={formData.secret_code}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  height: "44px",
+                  paddingLeft: "42px",
+                  paddingRight: "44px",
+                  border: "1.5px solid #cbd5e1",
+                  borderRadius: "10px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#0f172a",
+                  outline: "none",
+                  letterSpacing: showSecret ? "normal" : "2px",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSecret((p) => !p)}
+                title={showSecret ? "Ẩn mã PIN" : "Hiện mã PIN"}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#64748b",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {showSecret ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Info Callout Banner */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "#eff6ff",
+              border: "1px solid #dbeafe",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              color: "#1e40af",
+              fontSize: "13px",
+              marginTop: "4px",
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ flexShrink: 0 }}>
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="16" x2="12" y2="12" />
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
-            Thông tin phương tiện giúp bạn dễ dàng theo dõi và nhận diện xe trong hệ thống định vị & cảnh báo.
-          </p>
-        </section>
+            <span>
+              Thiết bị sau khi thêm sẽ ở trạng thái <strong>Chưa kích hoạt</strong> cho đến khi kết nối lần đầu.
+            </span>
+          </div>
 
-        <hr className="add-device-divider" />
-
-        {/* Footer Actions */}
-        <div className="add-device-footer">
-          <Link to="/devices" className="add-device-cancel-btn">
-            Hủy
-          </Link>
-          <button
-            type="submit"
-            className="add-device-submit-btn"
-            disabled={submitting}
+          {/* Divider line & Actions */}
+          <div
+            style={{
+              paddingTop: "20px",
+              borderTop: "1px solid #f1f5f9",
+              marginTop: "10px",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px",
+              alignItems: "center",
+            }}
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+            <Link
+              to="/devices"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "40px",
+                padding: "0 22px",
+                background: "#ffffff",
+                border: "1.5px solid #cbd5e1",
+                borderRadius: "8px",
+                color: "#334155",
+                fontSize: "13.5px",
+                fontWeight: "600",
+                textDecoration: "none",
+                transition: "all 0.15s",
+              }}
             >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            {submitting ? "Đang kiểm tra & kích hoạt..." : "Kích hoạt & Thêm thiết bị"}
-          </button>
-        </div>
-      </form>
+              Hủy
+            </Link>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "40px",
+                padding: "0 22px",
+                background: "#0066cc",
+                border: "none",
+                borderRadius: "8px",
+                color: "#ffffff",
+                fontSize: "13.5px",
+                fontWeight: "700",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,102,204,0.25)",
+                transition: "all 0.15s",
+              }}
+            >
+              {submitting ? "Đang thêm..." : "+ Thêm thiết bị"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
 
 export default AddDevice;
-

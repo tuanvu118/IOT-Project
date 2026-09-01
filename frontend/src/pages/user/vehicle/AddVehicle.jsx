@@ -140,8 +140,20 @@ function AddVehicle() {
       {success && <div className="add-vehicle-alert success">{success}</div>}
 
       <form className="add-vehicle-card" onSubmit={handleSubmit}>
-        <div className="add-vehicle-header">
-          <h1>Thêm phương tiện</h1>
+        <div className="add-vehicle-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+          <div>
+            <h1>Thêm phương tiện</h1>
+            <p className="add-device-subtitle" style={{ margin: "4px 0 0", color: "#64748b", fontSize: "14px" }}>
+              Nhập thông tin phương tiện mới để quản lý và liên kết với thiết bị IoT.
+            </p>
+          </div>
+          <Link to="/vehicles" className="app-back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Quay lại danh sách
+          </Link>
         </div>
 
         <hr className="add-vehicle-divider" />

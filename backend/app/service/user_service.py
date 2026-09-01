@@ -23,6 +23,7 @@ def _doc_to_entity(doc_id: str, data: dict) -> UserEntity:
         date_of_birth=data.get("dateOfBirth"),
         citizen_number=data.get("citizenNumber"),
         is_admin=data.get("isAdmin", False),
+        is_locked=data.get("isLocked", False),
         sos_numbers=data.get("sosNumbers", []),
         fcm_tokens=data.get("fcmTokens", []),
         last_sign_in=data.get("lastSignIn"),
@@ -60,6 +61,7 @@ class UserService:
             "dateOfBirth": payload.date_of_birth,
             "citizenNumber": payload.citizen_number,
             "isAdmin": False,
+            "isLocked": False,
             "sosNumbers": [],
             "fcmTokens": [],
             "lastSignIn": None,
@@ -82,6 +84,12 @@ class UserService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email hoặc mật khẩu không đúng.",
+            )
+
+        if data.get("isLocked", False) or data.get("status") == "locked":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
             )
 
         sign_in_time = datetime.now(timezone.utc).isoformat()
@@ -184,3 +192,45 @@ class UserService:
         if not doc.exists:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
         return doc.to_dict().get("sosNumbers", [])
+
+    def get_all(self) -> List[UserEntity]:
+        docs = self.collection.get()
+        return [_doc_to_entity(d.id, d.to_dict()) for d in docs]
+
+    def delete_user(self, uid: str) -> None:
+        doc_ref = self.collection.document(uid)
+        if not doc_ref.get().exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
+        
+        # 1. Detach all owned devices
+        try:
+            owned_devices = self.db.collection("devices").where("userId", "==", uid).get()
+            for dev in owned_devices:
+                dev.reference.update({
+                    "userId": None,
+                    "vehicle": None,
+                    "status": 0,
+                })
+        except Exception:
+            pass
+
+        # 2. Delete user notifications
+        try:
+            user_notifs = self.db.collection("user-notifications").where("userId", "==", uid).get()
+            for n in user_notifs:
+                n.reference.delete()
+        except Exception:
+            pass
+
+        # 3. Delete user document
+        doc_ref.delete()
+
+
+    def toggle_lock(self, uid: str, is_locked: bool) -> UserEntity:
+        doc_ref = self.collection.document(uid)
+        if not doc_ref.get().exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng.")
+        doc_ref.update({"isLocked": is_locked})
+        return _doc_to_entity(uid, doc_ref.get().to_dict())
+
+

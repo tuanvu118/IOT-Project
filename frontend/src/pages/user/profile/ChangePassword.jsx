@@ -78,9 +78,18 @@ function ChangePassword() {
 
       {/* Main Card */}
       <form className="change-password-card" onSubmit={handleSubmit}>
-        <div className="change-password-header">
-          <h1>Đổi mật khẩu</h1>
-          <p>Vui lòng nhập mật khẩu hiện tại và mật khẩu mới để cập nhật bảo mật tài khoản của bạn.</p>
+        <div className="change-password-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <h1>Đổi mật khẩu</h1>
+            <p style={{ margin: "4px 0 0" }}>Vui lòng nhập mật khẩu hiện tại và mật khẩu mới để cập nhật bảo mật tài khoản của bạn.</p>
+          </div>
+          <Link to="/profile" className="app-back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Quay lại hồ sơ
+          </Link>
         </div>
 
         <div className="change-password-fields">

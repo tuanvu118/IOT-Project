@@ -155,13 +155,6 @@ function Header() {
 
   return (
     <header className="user-topbar">
-      <label className="user-search">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="m16 16 4 4" />
-        </svg>
-        <input type="search" placeholder="Tìm kiếm..." />
-      </label>
 
       <div className="user-topbar-right">
         <div className="notification-wrap" ref={dropdownRef}>

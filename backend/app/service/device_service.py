@@ -183,23 +183,6 @@ class DeviceService:
         if payload.name and payload.name.strip():
             update_data["name"] = payload.name.strip()
 
-        vehicle_data = data.get("vehicle", {}) or {}
-        has_vehicle_update = False
-        if payload.brand is not None:
-            vehicle_data["brand"] = payload.brand.strip() or None
-            has_vehicle_update = True
-        if payload.model is not None:
-            vehicle_data["model"] = payload.model.strip() or None
-            has_vehicle_update = True
-        if payload.color is not None:
-            vehicle_data["color"] = payload.color.strip() or None
-            has_vehicle_update = True
-        if payload.license_plate is not None:
-            vehicle_data["licensePlate"] = payload.license_plate.strip() or None
-            has_vehicle_update = True
-
-        if has_vehicle_update:
-            update_data["vehicle"] = vehicle_data
 
         self.collection.document(doc.id).update(update_data)
         updated_doc = self.collection.document(doc.id).get()
@@ -223,10 +206,15 @@ class DeviceService:
         docs = self.collection.where("userId", "==", user_id).get()
         return [_doc_to_entity(d.id, d.to_dict()) for d in docs]
 
+    def get_all_devices(self) -> List[DeviceEntity]:
+        docs = self.collection.get()
+        return [_doc_to_entity(d.id, d.to_dict()) for d in docs]
+
     def get_unlinked_devices(self) -> List[DeviceEntity]:
-        """Lấy danh sách Device chưa được liên kết trong kho (Dành riêng cho Admin)."""
+        """Lấy danh sách thiết bị chưa được liên kết với user nào (userId == None)."""
         docs = self.collection.where("userId", "==", None).get()
         return [_doc_to_entity(d.id, d.to_dict()) for d in docs]
+
 
     # ─── Link / Unlink ────────────────────────────────────────────────────────
 
@@ -276,7 +264,40 @@ class DeviceService:
         return _doc_to_entity(doc.id, updated_data)
 
     def unlink_device(self, user_id: str, device_id: str) -> DeviceEntity:
-        """Xóa/gỡ thiết bị khỏi tài khoản (trả về trạng thái chưa sở hữu trong kho) và hủy liên kết phương tiện."""
+        """
+        Huỷ liên kết phương tiện khỏi thiết bị IoT.
+        Chỉ xóa thông tin xe (vehicle = None), KHÔNG xóa quyền sở hữu của user (userId giữ nguyên).
+        """
+        doc_ref = self.collection.document(device_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            docs = list(self.collection.where("verificationCode", "==", device_id).limit(1).get())
+            if docs:
+                doc = docs[0]
+                doc_ref = self.collection.document(doc.id)
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+
+        data = doc.to_dict()
+        if data.get("userId") != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền quản lý thiết bị này.")
+
+        # Chỉ reset thông tin phương tiện về null, giữ nguyên quyền sở hữu userId của người dùng
+        empty_vehicle = {
+            "brand": None,
+            "color": None,
+            "licensePlate": None,
+            "model": None,
+        }
+        doc_ref.update({"vehicle": empty_vehicle})
+        data["vehicle"] = empty_vehicle
+        return _doc_to_entity(doc.id, data)
+
+    def remove_device_from_user(self, user_id: str, device_id: str) -> DeviceEntity:
+        """
+        Xóa/gỡ thiết bị khỏi tài khoản (trả về trạng thái chưa sở hữu trong kho userId = None)
+        và xóa cấu hình chống trộm, thông tin xe.
+        """
         doc_ref = self.collection.document(device_id)
         doc = doc_ref.get()
         if not doc.exists:
@@ -409,4 +430,25 @@ class DeviceService:
         Gọi bởi NotificationService sau khi gửi thông báo thành công.
         """
         self.collection.document(device_id).update({f"properties.{field}": value})
+
+    def update_device(self, device_id: str, name: Optional[str] = None, secret_code: Optional[str] = None) -> DeviceEntity:
+        doc_ref = self.collection.document(device_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            docs = list(self.collection.where("verificationCode", "==", device_id).limit(1).get())
+            if not docs:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+            doc = docs[0]
+            doc_ref = self.collection.document(doc.id)
+
+        updates = {}
+        if name is not None:
+            updates["name"] = name
+        if secret_code is not None:
+            updates["secretCode"] = secret_code
+
+        if updates:
+            doc_ref.update(updates)
+        return _doc_to_entity(doc_ref.id, doc_ref.get().to_dict())
+
 

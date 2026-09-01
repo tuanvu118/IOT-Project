@@ -31,6 +31,12 @@ def get_current_user(
         )
 
     data = user_doc.to_dict()
+    if data.get("isLocked", False) or data.get("status") == "locked":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản này đã bị khóa. Vui lòng liên hệ quản trị viên.",
+        )
+
     return UserEntity(
         id=uid,
         email=data.get("email", ""),
@@ -42,6 +48,7 @@ def get_current_user(
         date_of_birth=data.get("dateOfBirth"),
         citizen_number=data.get("citizenNumber"),
         is_admin=data.get("isAdmin", False),
+        is_locked=data.get("isLocked", False),
         sos_numbers=data.get("sosNumbers", []),
         fcm_tokens=data.get("fcmTokens", []),
         last_sign_in=data.get("lastSignIn"),

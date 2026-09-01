@@ -13,6 +13,7 @@ from app.dto.device_dto import (
     UpdateDeviceStatusRequest,
     UpdateVehicleRequest,
     UpdateLocationRequest,
+    UpdateDeviceBasicRequest,
     DeviceResponse,
     DeviceConfigResponse,
     DevicePropertiesResponse,
@@ -54,6 +55,17 @@ def _to_response(device) -> DeviceResponse:
 
 
 # ─── CRUD ──────────────────────────────────────────────────────────────────────
+
+@router.get(
+    "",
+    response_model=List[DeviceResponse],
+    summary="Lấy danh sách toàn bộ thiết bị (Admin)",
+    description="Trả về tất cả thiết bị IoT trong hệ thống (chỉ dành cho Quản trị viên).",
+)
+def get_all_devices(current_user: UserEntity = Depends(require_admin)):
+    service = DeviceService()
+    return [_to_response(d) for d in service.get_all_devices()]
+
 
 @router.post(
     "",
@@ -170,8 +182,8 @@ def link_device(
     "/unlink",
     response_model=DeviceResponse,
     status_code=status.HTTP_200_OK,
-    summary="Huỷ liên kết Device",
-    description="Huỷ liên kết phương tiện khỏi thiết bị hoặc gỡ thiết bị. Chỉ owner mới được thực hiện.",
+    summary="Huỷ liên kết phương tiện khỏi thiết bị",
+    description="Huỷ liên kết phương tiện khỏi thiết bị (giữ nguyên quyền sở hữu thiết bị của user).",
 )
 def unlink_device(
     payload: UnlinkDeviceRequest,
@@ -179,6 +191,37 @@ def unlink_device(
 ):
     service = DeviceService()
     return _to_response(service.unlink_device(current_user.id, payload.device_id))
+
+
+@router.post(
+    "/remove",
+    response_model=DeviceResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Gỡ thiết bị khỏi tài khoản",
+    description="Gỡ quyền sở hữu thiết bị khỏi tài khoản (trả về kho).",
+)
+def remove_device(
+    payload: UnlinkDeviceRequest,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = DeviceService()
+    return _to_response(service.remove_device_from_user(current_user.id, payload.device_id))
+
+
+@router.delete(
+    "/{device_id}",
+    response_model=DeviceResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Xóa/Gỡ thiết bị khỏi tài khoản",
+    description="Gỡ quyền sở hữu thiết bị khỏi tài khoản người dùng.",
+)
+def delete_device(
+    device_id: str,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = DeviceService()
+    return _to_response(service.remove_device_from_user(current_user.id, device_id))
+
 
 
 # ─── Config ────────────────────────────────────────────────────────────────────
@@ -245,3 +288,19 @@ def update_location(
     """Không cần auth — thiết bị IoT gọi trực tiếp."""
     service = DeviceService()
     return _to_response(service.update_location(device_id, payload))
+
+
+@router.put(
+    "/{device_id}",
+    response_model=DeviceResponse,
+    summary="Cập nhật thông tin cơ bản của thiết bị",
+    description="Cập nhật tên thiết bị, mã xác minh bí mật (Admin hoặc Owner).",
+)
+def update_device_basic(
+    device_id: str,
+    payload: UpdateDeviceBasicRequest,
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = DeviceService()
+    return _to_response(service.update_device(device_id, name=payload.name, secret_code=payload.secret_code))
+

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getDeviceById, getMyDevices, unlinkDevice, updateDeviceStatus } from "../../../services/deviceService";
+import { getDeviceById, getMyDevices, removeDevice, updateDeviceStatus } from "../../../services/deviceService";
 
 function DeviceDetail() {
   const { id } = useParams();
@@ -22,10 +22,10 @@ function DeviceDetail() {
       try {
         const targetId = device?.id || device?.verification_code || id || code;
         if (targetId) {
-          await unlinkDevice(targetId);
+          await removeDevice(targetId);
         }
       } catch (apiErr) {
-        console.warn("Unlink API warning:", apiErr);
+        console.warn("Remove device API warning:", apiErr);
       }
 
       // Remove from custom_linked_devices
@@ -203,10 +203,17 @@ function DeviceDetail() {
   const devId = device?.id || "8492-IoT-991";
   const isOnline = Number(device?.status) === 1;
 
-  const vehicleName = device?.vehicle?.brand
-    ? `${device.vehicle.brand} ${device.vehicle.model || ""}`.trim()
-    : "Honda SH 150i";
-  const licensePlate = device?.vehicle?.license_plate || device?.vehicle?.licensePlate || "29A1-999.99";
+  const hasVehicle = Boolean(
+    device?.vehicle &&
+      (device.vehicle.brand || device.vehicle.model || device.vehicle.license_plate || device.vehicle.licensePlate)
+  );
+
+  const vehicleName = hasVehicle
+    ? [device.vehicle.brand, device.vehicle.model].filter(Boolean).join(" ") || "Phương tiện"
+    : "Chưa liên kết";
+  const licensePlate = hasVehicle
+    ? device?.vehicle?.license_plate || device?.vehicle?.licensePlate || "--"
+    : "--";
 
   const batteryLevel = device?.battery || 94;
   const latitude = device?.locations?.[0]?.latitude || 21.028511;
@@ -274,7 +281,9 @@ function DeviceDetail() {
               </div>
               <div className="device-title-wrap">
                 <h2>{devCode}</h2>
-                <span>ID: #{devId}</span>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "2px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "12.5px", color: "#64748b" }}>ID: #{devId}</span>
+                </div>
               </div>
             </div>
 
@@ -311,7 +320,21 @@ function DeviceDetail() {
                   <circle cx="15" cy="5" r="1" />
                   <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
                 </svg>
-                <strong>{vehicleName}</strong>
+                {hasVehicle ? (
+                  <strong>{vehicleName}</strong>
+                ) : (
+                  <Link
+                    to="/devices/link"
+                    style={{
+                      fontSize: "13px",
+                      color: "#2563eb",
+                      fontWeight: "600",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Chưa liên kết (+ Liên kết)
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -472,7 +495,7 @@ function DeviceDetail() {
             </div>
 
             <Link to={`/devices/${id || devCode}/sensors`} className="view-stream-data-link">
-              Xem dữ liệu chuỗi
+              Xem luồng dữ liệu thời gian thực
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                 <polyline points="15 3 21 3 21 9" />

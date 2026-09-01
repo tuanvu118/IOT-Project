@@ -1,7 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
-import { getMyProfile, updateMyProfile, uploadAvatar, addSosNumber, removeSosNumber } from "../../../services/userService";
+import {
+  getMyProfile,
+  updateMyProfile,
+  uploadAvatar,
+  addSosNumber,
+  removeSosNumber,
+  deleteMyAccount,
+} from "../../../services/userService";
 import { validateFullName, validatePhoneNumber, validateCitizenNumber } from "../../../utils/validators";
 
 function normalizePhones(phones) {
@@ -259,6 +266,25 @@ function EditProfile() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (
+      !window.confirm(
+        "CẢNH BÁO: Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản của mình? Mọi dữ liệu liên kết thiết bị và thông báo sẽ bị xóa."
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteMyAccount();
+      localStorage.clear();
+      alert("Tài khoản của bạn đã được xóa thành công.");
+      navigate("/login");
+      window.location.reload();
+    } catch (err) {
+      alert("Không thể xóa tài khoản: " + (err?.message || "Lỗi hệ thống"));
+    }
+  };
+
   return (
     <div className="edit-profile-page">
       {/* Breadcrumbs */}
@@ -269,9 +295,18 @@ function EditProfile() {
       </nav>
 
       {/* Heading */}
-      <div className="edit-profile-heading">
-        <h1>Thông tin cá nhân</h1>
-        <p>Cập nhật thông tin chi tiết và cách thức liên lạc của bạn.</p>
+      <div className="edit-profile-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Thông tin cá nhân</h1>
+          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "14px" }}>Cập nhật thông tin chi tiết và cách thức liên lạc của bạn.</p>
+        </div>
+        <Link to="/profile" className="app-back-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Quay lại hồ sơ
+        </Link>
       </div>
 
       {error && <div className="edit-profile-alert error">{error}</div>}
@@ -484,17 +519,28 @@ function EditProfile() {
           </section>
 
           {/* Bottom Actions */}
-          <div className="edit-profile-footer">
-            <Link to="/profile" className="edit-profile-cancel-btn">
-              Hủy
-            </Link>
+          <div className="edit-profile-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <button
-              type="submit"
-              className="edit-profile-save-btn"
-              disabled={submitting}
+              type="button"
+              className="admin-action-btn delete"
+              style={{ width: "auto", padding: "0 16px", height: "40px", color: "#dc2626", borderColor: "#fecaca", background: "#fef2f2", fontWeight: "600", fontSize: "13.5px" }}
+              onClick={handleDeleteAccount}
             >
-              {submitting ? "Đang lưu..." : "Lưu thay đổi"}
+              Xóa tài khoản của tôi
             </button>
+
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Link to="/profile" className="edit-profile-cancel-btn">
+                Hủy
+              </Link>
+              <button
+                type="submit"
+                className="edit-profile-save-btn"
+                disabled={submitting}
+              >
+                {submitting ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
           </div>
         </form>
       )}

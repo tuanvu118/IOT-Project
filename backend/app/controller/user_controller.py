@@ -1,10 +1,12 @@
+from typing import List
 from fastapi import APIRouter, Depends, File, UploadFile, status
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_admin
 from app.dto.user_dto import (
     AddSosNumberRequest,
     RegisterFcmTokenRequest,
     RemoveSosNumberRequest,
+    ToggleLockRequest,
     UpdateUserRequest,
     UserResponse,
 )
@@ -33,6 +35,17 @@ def _to_response(user: UserEntity) -> UserResponse:
 
 
 @router.get(
+    "",
+    response_model=List[UserResponse],
+    summary="Lấy danh sách tất cả người dùng (Admin)",
+    description="Chỉ dành cho quản trị viên.",
+)
+def get_all_users(current_user: UserEntity = Depends(require_admin)):
+    service = UserService()
+    return [_to_response(u) for u in service.get_all()]
+
+
+@router.get(
     "/me",
     response_model=UserResponse,
     summary="Lấy thông tin cá nhân",
@@ -40,6 +53,7 @@ def _to_response(user: UserEntity) -> UserResponse:
 )
 def get_my_profile(current_user: UserEntity = Depends(get_current_user)):
     return _to_response(current_user)
+
 
 
 @router.put(
@@ -144,3 +158,48 @@ def unregister_fcm_token(
 ):
     service = UserService()
     service.unregister_fcm_token(current_user.id, payload.token)
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Xóa tài khoản hiện tại",
+    description="Xóa vĩnh viễn tài khoản của người dùng đang đăng nhập.",
+)
+def delete_my_account(
+    current_user: UserEntity = Depends(get_current_user),
+):
+    service = UserService()
+    service.delete_user(current_user.id)
+
+
+@router.delete(
+    "/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Xóa người dùng (Admin)",
+    description="Chỉ dành cho quản trị viên.",
+)
+def delete_user_by_admin(
+    user_id: str,
+    current_user: UserEntity = Depends(require_admin),
+):
+    service = UserService()
+    service.delete_user(user_id)
+
+
+
+@router.put(
+    "/{user_id}/lock",
+    response_model=UserResponse,
+    summary="Khóa / Mở khóa tài khoản người dùng (Admin)",
+    description="Chỉ dành cho quản trị viên.",
+)
+def toggle_user_lock(
+    user_id: str,
+    payload: ToggleLockRequest,
+    current_user: UserEntity = Depends(require_admin),
+):
+    service = UserService()
+    return _to_response(service.toggle_lock(user_id, payload.is_locked))
+
+

@@ -106,9 +106,15 @@ function VehicleCard({ device, onUpdate, onDelete }) {
       });
       localStorage.setItem("custom_vehicles", JSON.stringify(updatedCustom));
 
-      // 3. Remove from custom_linked_devices if any
+      // 3. Keep device in custom_linked_devices with vehicle: null
       const customLinked = JSON.parse(localStorage.getItem("custom_linked_devices") || "[]");
-      const updatedLinked = customLinked.filter((d) => d.id !== device.id);
+      const devCode = device?.verification_code || device?.name || device?.id;
+      const updatedLinked = customLinked.map((d) => {
+        if (d.id === device?.id || d.verification_code === devCode) {
+          return { ...d, vehicle: null };
+        }
+        return d;
+      });
       localStorage.setItem("custom_linked_devices", JSON.stringify(updatedLinked));
 
       if (onDelete) {

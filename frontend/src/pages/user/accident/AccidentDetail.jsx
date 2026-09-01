@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAlertDetail, markNotificationAsRead } from "../../../services/alertService";
 import { apiRequest } from "../../../services/api";
@@ -155,9 +155,18 @@ function AccidentDetail() {
         <strong>Chi tiết cảnh báo</strong>
       </div>
 
-      <div className="alert-detail-heading">
-        <h1>Chi tiết cảnh báo</h1>
-        <p>Thông tin chi tiết về sự kiện cảnh báo của phương tiện.</p>
+      <div className="alert-detail-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <div>
+          <h1>Chi tiết cảnh báo</h1>
+          <p>Thông tin chi tiết về sự kiện cảnh báo của phương tiện.</p>
+        </div>
+        <Link to="/alerts" className="app-back-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Quay lại danh sách
+        </Link>
       </div>
 
       {isLoading ? (

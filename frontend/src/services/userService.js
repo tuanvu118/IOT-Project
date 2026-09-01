@@ -11,6 +11,12 @@ export function updateMyProfile(payload) {
   });
 }
 
+export function deleteMyAccount() {
+  return apiRequest("/users/me", {
+    method: "DELETE",
+  });
+}
+
 export function uploadAvatar(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -33,3 +39,26 @@ export function removeSosNumber(phoneNumber) {
     body: JSON.stringify({ phone_number: phoneNumber }),
   });
 }
+
+export function getAllUsers() {
+  return apiRequest("/users");
+}
+
+export function getUserById(userId) {
+  return apiRequest(`/users/${userId}`);
+}
+
+export function deleteUserByAdmin(userId) {
+  return apiRequest(`/users/${userId}`, {
+    method: "DELETE",
+  });
+}
+
+export function toggleUserLock(userId, isLocked) {
+  return apiRequest(`/users/${userId}/lock`, {
+    method: "PUT",
+    body: JSON.stringify({ is_locked: isLocked }),
+  });
+}
+
+
