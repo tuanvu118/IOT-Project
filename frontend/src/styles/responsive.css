@@ -1,0 +1,294 @@
+/* ==========================================================================
+   USER INTERFACE RESPONSIVE & ZOOM ADAPTIVE STYLES
+   ========================================================================== */
+
+/* 1. LAYOUT SHELL & CONTENT CONTAINER */
+.user-shell {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) !important;
+  min-height: 100vh;
+}
+
+.user-sidebar {
+  width: 200px !important;
+  min-width: 200px !important;
+  padding: 16px 14px 24px !important;
+}
+
+.user-sidebar-logo {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+}
+
+.user-sidebar-logo svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.user-sidebar-brand strong {
+  font-size: 17px !important;
+}
+
+.user-sidebar-brand span {
+  font-size: 11px !important;
+}
+
+.user-sidebar-link {
+  height: 42px !important;
+  font-size: 13.5px !important;
+  padding: 0 12px !important;
+}
+
+.user-sidebar-link svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.user-content {
+  padding: 24px clamp(16px, 2.5vw, 36px) 48px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. UNIFIED FLUID PAGE CONTAINERS */
+/* Expands gracefully up to 1360px on zoom out and centers nicely */
+.dashboard-page,
+.tracking-page,
+.vehicles-page,
+.devices-page,
+.device-detail-page,
+.alerts-page,
+.alert-detail-page {
+  width: 100% !important;
+  max-width: 1360px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+}
+
+.edit-vehicle-page,
+.add-vehicle-page,
+.add-device-page,
+.link-device-page,
+.profile-page,
+.edit-profile-page,
+.change-password-page {
+  width: 100% !important;
+  max-width: 960px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+}
+
+/* 3. FLUID HEADERS (Wraps cleanly without collision when zooming in) */
+.dashboard-heading-row,
+.tracking-heading-row,
+.vehicles-heading-row,
+.devices-page-header,
+.device-detail-top-nav,
+.alerts-heading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 24px !important;
+}
+
+.dashboard-heading-row h1,
+.tracking-heading-row h1,
+.vehicles-heading-row h1,
+.devices-heading-left h1,
+.alerts-heading h1 {
+  font-size: clamp(22px, 2.2vw, 30px) !important;
+  margin: 0 0 6px !important;
+  line-height: 1.2 !important;
+}
+
+.dashboard-heading-row select {
+  width: 280px !important;
+  max-width: 100% !important;
+  height: 42px !important;
+  font-size: 14px !important;
+}
+
+/* 4. DASHBOARD 4 STATS CARDS */
+.dashboard-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  margin-bottom: 24px !important;
+}
+
+/* 5. DASHBOARD MAIN GRID */
+.dashboard-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 300px !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+.dashboard-map {
+  height: clamp(300px, 42vh, 450px) !important;
+}
+
+/* 6. TRACKING PAGE GRID */
+.tracking-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 280px !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+.tracking-map {
+  width: 100% !important;
+  height: clamp(380px, 55vh, 650px) !important;
+}
+
+/* 7. VEHICLES GRID (Fluid auto-fill adapts smoothly to zoom in and zoom out) */
+.vehicles-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+  gap: 20px !important;
+}
+
+/* 8. ALERT DETAIL GRID */
+.alert-detail-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 300px !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+/* 9. NOTIFICATION DROPDOWN FIX (Prevent clipping off-screen) */
+.notification-dropdown {
+  right: -20px !important;
+  width: 380px !important;
+  max-width: calc(100vw - 32px) !important;
+}
+
+/* ==========================================================================
+   BREAKPOINTS FOR ZOOM IN & SMALLER SCREENS
+   ========================================================================== */
+
+/* LAPTOP ZOOM / TABLET HORIZONTAL (<= 1120px) */
+@media (max-width: 1120px) {
+  .user-shell {
+    grid-template-columns: 200px minmax(0, 1fr) !important;
+  }
+
+  .notification-page-dim {
+    left: 200px !important;
+  }
+
+  /* 4 Stats -> 2 columns */
+  .dashboard-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  /* Main grids become 1 single column so map is full width with NO empty column */
+  .dashboard-grid,
+  .tracking-grid,
+  .alert-detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* Side panels stack beneath map in 2 balanced columns */
+  .dashboard-side,
+  .tracking-side,
+  .alert-detail-side {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .vehicles-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+/* TABLET PORTRAIT & HIGH ZOOM (<= 860px) */
+@media (max-width: 860px) {
+  .dashboard-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .tracking-actions select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .tracking-actions {
+    width: 100% !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+/* MOBILE APP MODE (<= 780px) */
+@media (max-width: 780px) {
+  .user-shell {
+    display: block !important;
+    min-height: 100vh !important;
+  }
+
+  .user-sidebar {
+    display: none !important;
+  }
+
+  .user-main-shell {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .user-content {
+    padding: 16px 14px 90px !important;
+  }
+
+  .user-topbar {
+    height: auto !important;
+    padding: 12px 16px !important;
+  }
+
+  .notification-dropdown {
+    right: -10px !important;
+    width: min(360px, calc(100vw - 28px)) !important;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-side,
+  .tracking-side,
+  .alert-detail-side {
+    grid-template-columns: 1fr !important;
+  }
+
+  .vehicles-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-heading-row,
+  .tracking-heading-row,
+  .vehicles-heading-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .dashboard-heading-row select,
+  .vehicles-add-btn,
+  .tracking-actions {
+    width: 100% !important;
+  }
+
+  .tracking-actions select,
+  .tracking-actions button {
+    width: 100% !important;
+  }
+}

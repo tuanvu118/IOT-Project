@@ -6,6 +6,7 @@ import UserSidebar from "../components/layout/UserSidebar";
 import MobileBottomNav from "../components/layout/MobileBottomNav";
 
 import "../styles/user-dashboard.css";
+import "../styles/responsive.css";
 
 function UserLayout() {
   return (
