@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMyDevices } from "../../../services/deviceService";
+import MapView from "../../../components/map/MapView";
+import useLocation from "../../../hooks/useLocation";
 
 function getDeviceOnline(device) {
   return Boolean(
@@ -84,23 +86,65 @@ function TrackingIcon({ type }) {
   );
 }
 
+function formatLastUpdated(value) {
+  if (!value) return "--";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "--";
+  }
+
+  const time = date.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const today = new Date();
+
+  const isToday =
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+
+  if (isToday) {
+    return `${time} - Hôm nay`;
+  }
+
+  const day = date.toLocaleDateString("vi-VN");
+
+  return `${time} - ${day}`;
+}
+
 function Tracking() {
   const [devices, setDevices] = useState([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const {
+    location: liveLocation,
+    device: liveDevice,
+    refreshing,
+    error: locationError,
+    lastUpdated,
+    refreshLocation,
+  } = useLocation(selectedDeviceId);
 
   const selectedDevice = useMemo(
     () => devices.find((device) => device.id === selectedDeviceId) || devices[0] || null,
     [devices, selectedDeviceId],
   );
-  const latestLocation = getLatestLocation(selectedDevice);
-  const isOnline = getDeviceOnline(selectedDevice);
-  const vehicleName = getVehicleName(selectedDevice);
-  const plate = getLicensePlate(selectedDevice);
+  const currentDevice = liveDevice || selectedDevice;
+  const latestLocation =
+    liveLocation || getLatestLocation(selectedDevice);
+  const isOnline = getDeviceOnline(currentDevice);
+  const vehicleName = getVehicleName(currentDevice);
+  const plate = getLicensePlate(currentDevice);
   const latitude = latestLocation?.latitude ?? "--";
   const longitude = latestLocation?.longitude ?? "--";
-  const updatedAt = latestLocation?.created_at || latestLocation?.createdAt || "--";
+  const updatedAt = formatLastUpdated(lastUpdated);
 
   const loadDevices = async () => {
     setIsLoading(true);
@@ -147,14 +191,24 @@ function Tracking() {
             )}
           </select>
 
-          <button type="button" onClick={loadDevices} disabled={isLoading}>
+          <button
+            className="tracking-refresh-desktop"
+            type="button"
+            onClick={refreshLocation}
+            disabled={!selectedDeviceId || refreshing}
+          >
             <TrackingIcon type="refresh" />
-            {isLoading ? "Đang cập nhật" : "Cập nhật vị trí"}
+            {refreshing ? "Đang cập nhật..." : "Cập nhật vị trí"}
           </button>
         </div>
       </div>
 
       {error && <p className="dashboard-load-error">{error}</p>}
+      {locationError && (
+        <p className="dashboard-load-error">
+          {locationError}
+        </p>
+      )}
 
       <div className="tracking-grid">
         <section className="tracking-map-card">
@@ -164,25 +218,29 @@ function Tracking() {
           </div>
 
           <div className={`tracking-map ${!selectedDevice ? "is-empty" : ""}`}>
-            <div className="map-river" />
-            <div className="map-road road-main" />
-            <div className="map-road road-second" />
-            <div className="map-road road-third" />
-            <div className="map-area area-a">Trường Đại học Mỏ Địa chất</div>
-            <div className="map-area area-b">Bãi Đá Sông Hồng</div>
-            <div className="map-area area-c">Sân vận động Mỹ Đình</div>
-            <div className="map-area area-d">VINHOMES RIVERSIDE</div>
-            <div className="map-city">Hanoi</div>
-            <div className="map-plate">{plate}</div>
-            <div className="map-bike">
-              <TrackingIcon type="bike" />
-            </div>
-            <div className="tracking-map-controls">
-              <button type="button">◎</button>
-              <button type="button">+</button>
-              <button type="button">−</button>
-            </div>
+            <MapView
+              latitude={
+                typeof latestLocation?.latitude === "number"
+                  ? latestLocation.latitude
+                  : null
+              }
+              longitude={
+                typeof latestLocation?.longitude === "number"
+                  ? latestLocation.longitude
+                  : null
+              }
+              device={currentDevice}
+            />
           </div>
+          <button
+            className="tracking-refresh-mobile"
+            type="button"
+            onClick={refreshLocation}
+            disabled={!selectedDeviceId || refreshing}
+          >
+            <TrackingIcon type="refresh" />
+              {refreshing ? "Đang cập nhật..." : "Cập nhật vị trí"}
+          </button>
         </section>
 
         <aside className="tracking-side">
@@ -220,12 +278,17 @@ function Tracking() {
             <section>
               <TrackingIcon type="gps" />
               <small>TRẠNG THÁI GPS</small>
-              <strong>{selectedDevice?.gpsStatus || (latestLocation ? "Hoạt động" : "Chưa có dữ liệu")}</strong>
+              <strong>
+                {currentDevice?.gpsStatus ||
+                (latestLocation ? "Hoạt động" : "Chưa có dữ liệu")}
+              </strong>
             </section>
             <section>
               <TrackingIcon type="device" />
               <small>THIẾT BỊ</small>
-              <strong>{selectedDevice?.name || selectedDevice?.id || "--"}</strong>
+              <strong>
+                {currentDevice?.name || currentDevice?.id || "--"}
+              </strong>
             </section>
           </div>
 
@@ -235,7 +298,12 @@ function Tracking() {
               <small>CẬP NHẬT CUỐI</small>
               <strong>{updatedAt}</strong>
             </div>
-            <button type="button" onClick={loadDevices} aria-label="Làm mới vị trí">
+            <button
+              type="button"
+              onClick={refreshLocation}
+              disabled={!selectedDeviceId || refreshing}
+              aria-label="Làm mới vị trí"
+            >
               <TrackingIcon type="refresh" />
             </button>
           </section>
