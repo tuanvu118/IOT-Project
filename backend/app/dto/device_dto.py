@@ -17,10 +17,6 @@ class AddUserDeviceRequest(BaseModel):
     verification_code: str
     secret_code: str
     name: Optional[str] = None
-    brand: Optional[str] = None
-    model: Optional[str] = None
-    color: Optional[str] = None
-    license_plate: Optional[str] = None
 
 
 class LinkDeviceRequest(BaseModel):
@@ -60,6 +56,13 @@ class UpdateLocationRequest(BaseModel):
     """Cập nhật vị trí GPS mới nhất của thiết bị."""
     latitude: float
     longitude: float
+
+
+class UpdateDeviceBasicRequest(BaseModel):
+    """Cập nhật tên và mã xác nhận bí mật của thiết bị."""
+    name: Optional[str] = None
+    secret_code: Optional[str] = None
+
 
 
 # ─── Response Sub-models ──────────────────────────────────────────────────────

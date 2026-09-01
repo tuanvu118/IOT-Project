@@ -169,6 +169,10 @@ class RegisterFcmTokenRequest(BaseModel):
 
 
 
+class ToggleLockRequest(BaseModel):
+    is_locked: bool
+
+
 class UserResponse(BaseModel):
     id: str
     email: str
@@ -179,6 +183,7 @@ class UserResponse(BaseModel):
     date_of_birth: Optional[str] = None
     citizen_number: Optional[str] = None
     is_admin: bool = False
+    is_locked: bool = False
     sos_numbers: List[str] = []
     fcm_tokens: List[str] = []
     last_sign_in: Optional[str] = None
@@ -189,3 +194,4 @@ class AuthResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserResponse
+
