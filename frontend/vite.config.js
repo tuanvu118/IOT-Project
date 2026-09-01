@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import fs from 'fs'
 
+const certPath = './certs/localhost+lan.pem'
+const keyPath = './certs/localhost+lan-key.pem'
+const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath)
+
 export default defineConfig({
   plugins: [
     react(),
@@ -34,10 +38,14 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
 
-    https: {
-      key: fs.readFileSync('./certs/localhost+lan-key.pem'),
-      cert: fs.readFileSync('./certs/localhost+lan.pem'),
-    },
+    ...(hasCerts
+      ? {
+          https: {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath),
+          },
+        }
+      : {}),
 
     proxy: {
       '/api': {
