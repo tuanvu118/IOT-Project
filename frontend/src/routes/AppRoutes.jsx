@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import useIsMobile from "../hooks/useIsMobile";
 
 // Public
 import Home from "../pages/Home";
@@ -13,7 +14,7 @@ import AdminLayout from "../layouts/AdminLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
 
-// ================= USER =================
+// ================= USER (ORIGINAL DESKTOP WEB) =================
 
 // Dashboard
 import Dashboard from "../pages/user/Dashboard";
@@ -44,6 +45,18 @@ import Profile from "../pages/user/profile/Profile";
 import EditProfile from "../pages/user/profile/EditProfile";
 import ChangePassword from "../pages/user/profile/ChangePassword";
 
+// ================= USER (DEDICATED PWA MOBILE) =================
+import MobileDashboard from "../pages/mobile/MobileDashboard";
+import MobileTracking from "../pages/mobile/MobileTracking";
+import MobileAlerts from "../pages/mobile/MobileAlerts";
+import MobileVehicles from "../pages/mobile/MobileVehicles";
+import MobileAddVehicle from "../pages/mobile/MobileAddVehicle";
+import MobileDevices from "../pages/mobile/MobileDevices";
+import MobileAddDevice from "../pages/mobile/MobileAddDevice";
+import MobileLinkDevice from "../pages/mobile/MobileLinkDevice";
+import MobileDeviceDetail from "../pages/mobile/MobileDeviceDetail";
+import MobileProfile from "../pages/mobile/MobileProfile";
+
 // ================= ADMIN =================
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -65,6 +78,18 @@ import AdminSettings from "../pages/admin/settings/AdminSettings";
 // 404
 import NotFound from "../pages/NotFound";
 
+/**
+ * AdaptiveRoute dynamically renders the Mobile PWA Component on phones/PWA mode,
+ * and the original Desktop Web Component on PC browsers.
+ */
+function AdaptiveRoute({ desktop: DesktopComponent, mobile: MobileComponent }) {
+  const isMobile = useIsMobile();
+  if (isMobile && MobileComponent) {
+    return <MobileComponent />;
+  }
+  return <DesktopComponent />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -83,29 +108,59 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/dashboard"
+          element={<AdaptiveRoute desktop={Dashboard} mobile={MobileDashboard} />}
+        />
 
         {/* Tracking */}
-        <Route path="/tracking" element={<Tracking />} />
+        <Route
+          path="/tracking"
+          element={<AdaptiveRoute desktop={Tracking} mobile={MobileTracking} />}
+        />
 
         {/* Alerts */}
-        <Route path="/alerts" element={<AccidentHistory />} />
+        <Route
+          path="/alerts"
+          element={<AdaptiveRoute desktop={AccidentHistory} mobile={MobileAlerts} />}
+        />
         <Route path="/alerts/:id" element={<AccidentDetail />} />
 
         {/* Vehicles */}
-        <Route path="/vehicles" element={<Vehicles />} />
-        <Route path="/vehicles/add" element={<AddVehicle />} />
+        <Route
+          path="/vehicles"
+          element={<AdaptiveRoute desktop={Vehicles} mobile={MobileVehicles} />}
+        />
+        <Route
+          path="/vehicles/add"
+          element={<AdaptiveRoute desktop={AddVehicle} mobile={MobileAddVehicle} />}
+        />
         <Route path="/vehicles/:id/edit" element={<EditVehicle />} />
 
         {/* Devices */}
-        <Route path="/devices" element={<Devices />} />
-        <Route path="/devices/add" element={<AddDevice />} />
-        <Route path="/devices/link" element={<LinkDevice />} />
-        <Route path="/devices/:id" element={<DeviceDetail />} />
+        <Route
+          path="/devices"
+          element={<AdaptiveRoute desktop={Devices} mobile={MobileDevices} />}
+        />
+        <Route
+          path="/devices/add"
+          element={<AdaptiveRoute desktop={AddDevice} mobile={MobileAddDevice} />}
+        />
+        <Route
+          path="/devices/link"
+          element={<AdaptiveRoute desktop={LinkDevice} mobile={MobileLinkDevice} />}
+        />
+        <Route
+          path="/devices/:id"
+          element={<AdaptiveRoute desktop={DeviceDetail} mobile={MobileDeviceDetail} />}
+        />
         <Route path="/devices/:id/sensors" element={<SensorData />} />
 
         {/* Profile */}
-        <Route path="/profile" element={<Profile />} />
+        <Route
+          path="/profile"
+          element={<AdaptiveRoute desktop={Profile} mobile={MobileProfile} />}
+        />
         <Route path="/profile/edit" element={<EditProfile />} />
         <Route
           path="/profile/change-password"
