@@ -405,22 +405,64 @@ class DeviceService:
 
     # ─── Location ─────────────────────────────────────────────────────────────
 
-    def update_location(self, device_id: str, payload: UpdateLocationRequest) -> DeviceEntity:
+    def update_location(
+        self,
+        device_id: str,
+        payload: UpdateLocationRequest
+    ) -> DeviceEntity:
         """
-        Cập nhật vị trí GPS mới nhất (replace toàn bộ mảng locations[]).
-        Mảng luôn chỉ có 1 phần tử – vị trí mới nhất.
-        """
-        doc_ref = self.collection.document(device_id)
-        if not doc_ref.get().exists:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị.")
+        Cập nhật vị trí GPS mới nhất.
 
+        device_id có thể là:
+        - Firestore document ID
+        - verificationCode, ví dụ IOT-006
+
+        locations[] luôn chỉ giữ vị trí mới nhất.
+        """
+
+        # 1. Thử tìm theo Firestore document ID trước
+        doc_ref = self.collection.document(device_id)
+        doc = doc_ref.get()
+
+        # 2. Nếu không tồn tại -> tìm theo verificationCode
+        if not doc.exists:
+            query = (
+                self.collection
+                .where("verificationCode", "==", device_id)
+                .limit(1)
+                .stream()
+            )
+
+            matched_doc = next(query, None)
+
+            if matched_doc is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Không tìm thấy thiết bị."
+                )
+
+            doc_ref = matched_doc.reference
+            doc = matched_doc
+
+        # 3. Tạo GPS mới
         new_location = {
             "createdAt": datetime.now(timezone.utc),
             "latitude": payload.latitude,
             "longitude": payload.longitude,
         }
-        doc_ref.update({"locations": [new_location]})
-        return _doc_to_entity(device_id, doc_ref.get().to_dict())
+
+        # 4. Chỉ giữ vị trí mới nhất
+        doc_ref.update({
+            "locations": [new_location]
+        })
+
+        # 5. Đọc lại document sau khi update
+        updated_doc = doc_ref.get()
+
+        return _doc_to_entity(
+            updated_doc.id,
+            updated_doc.to_dict()
+        )
 
     # ─── Properties (gọi từ system khi gửi notification) ─────────────────────
 
