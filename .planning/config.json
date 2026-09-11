@@ -1,0 +1,6 @@
+{
+  "mode": "interactive",
+  "model_profile": "balanced",
+  "commit_strategy": "atomic",
+  "branching": "main"
+}
