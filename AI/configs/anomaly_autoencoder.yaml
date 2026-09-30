@@ -1,0 +1,56 @@
+project:
+  name: smartbike-normal-anomaly-detector
+  seed: 42
+
+data:
+  expected_behaviors:
+    - cruise
+    - traffic
+    - fun
+    - wait
+    - overtake
+  required_columns:
+    - Acc_X
+    - Acc_Y
+    - Acc_Z
+    - Gyr_X
+    - Gyr_Y
+    - Gyr_Z
+  include_magnitudes: true
+  sample_time_column: SampleTimeFine
+  sample_time_scale_seconds: 0.0001
+  min_valid_rows: 100
+  split:
+    train: 0.70
+    validation: 0.15
+    test: 0.15
+
+window:
+  sampling_rate_hz: 50
+  duration_seconds: 2.0
+  overlap: 0.50
+
+model:
+  type: conv1d_autoencoder
+  encoder_filters:
+    - 32
+    - 16
+  latent_filters: 8
+  kernel_size: 5
+
+training:
+  batch_size: 256
+  epochs: 60
+  learning_rate: 0.001
+  early_stopping_patience: 8
+  reduce_lr_patience: 4
+  reduce_lr_factor: 0.5
+  minimum_learning_rate: 0.00001
+  shuffle_buffer: 10000
+
+threshold:
+  validation_percentile: 99.5
+
+artifacts:
+  output_dir: AI/runs/anomaly_autoencoder
+

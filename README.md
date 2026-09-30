@@ -233,3 +233,17 @@ Frontend:
 ```powershell
 docker compose logs frontend --tail 100
 ```
+
+---
+
+# 🧠 Huấn luyện AI trên Google Colab
+
+Pipeline anomaly detection học các trạng thái lái xe bình thường nằm trong [`AI/`](AI/README.md).
+
+Luồng hiện tại:
+
+```text
+TrainingData NORMAL -> Conv1D Autoencoder -> Reconstruction Error -> NORMAL / ABNORMAL_SUSPECTED_FALL
+```
+
+Notebook Colab có sẵn tại `AI/notebooks/training_colab.ipynb`. Dataset không được commit lên GitHub; xem hướng dẫn đóng gói và upload một lần lên Google Drive trong tài liệu AI.

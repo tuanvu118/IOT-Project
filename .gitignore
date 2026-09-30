@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AI training artifacts and local data
+AI/runs/*
+!AI/runs/.gitkeep
+AI/data/
+AI/**/*.keras
+AI/**/*.h5
+AI/**/*.onnx
+AI/**/__pycache__/
+AI/**/*.pyc
