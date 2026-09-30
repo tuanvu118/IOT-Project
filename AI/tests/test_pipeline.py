@@ -13,6 +13,7 @@ from AI.src.dataset import (
     feature_names,
     split_records_by_group,
 )
+from AI.src.evaluate import summarize_normal_scores
 from AI.src.preprocessing import fit_standardizer
 from AI.src.windowing import sliding_windows
 
@@ -65,6 +66,13 @@ class PipelineTests(unittest.TestCase):
         values = np.zeros((500, 8), dtype=np.float32)
         windows = sliding_windows(values, window_size=100, step_size=50)
         self.assertEqual(windows.shape, (9, 100, 8))
+
+    def test_normal_only_metrics_are_explicit(self) -> None:
+        metrics = summarize_normal_scores(np.array([0.1, 0.2, 0.8]), threshold=0.5)
+        self.assertEqual(metrics["normal_windows_correct"], 2)
+        self.assertEqual(metrics["false_positive_windows"], 1)
+        self.assertAlmostEqual(metrics["normal_acceptance_rate"], 2 / 3)
+        self.assertAlmostEqual(metrics["false_positive_rate"], 1 / 3)
 
 
 if __name__ == "__main__":

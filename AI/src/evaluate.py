@@ -18,6 +18,9 @@ def reconstruction_errors(model, windows: np.ndarray, batch_size: int = 256) -> 
 
 
 def summarize_normal_scores(scores: np.ndarray, threshold: float) -> dict[str, float | int]:
+    false_positive_windows = int(np.sum(scores > threshold))
+    normal_windows_correct = int(len(scores) - false_positive_windows)
+    false_positive_rate = float(false_positive_windows / len(scores))
     return {
         "window_count": int(len(scores)),
         "mean": float(np.mean(scores)),
@@ -28,8 +31,10 @@ def summarize_normal_scores(scores: np.ndarray, threshold: float) -> dict[str, f
         "p99": float(np.percentile(scores, 99)),
         "maximum": float(np.max(scores)),
         "threshold": float(threshold),
-        "false_positive_windows": int(np.sum(scores > threshold)),
-        "false_positive_rate": float(np.mean(scores > threshold)),
+        "normal_windows_correct": normal_windows_correct,
+        "false_positive_windows": false_positive_windows,
+        "normal_acceptance_rate": float(normal_windows_correct / len(scores)),
+        "false_positive_rate": false_positive_rate,
     }
 
 
